@@ -11,6 +11,7 @@
         "doctrine/doctrine-bundle": "^2.14",
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.3",
+        "knplabs/knp-paginator-bundle": "^6.7",
         "phpdocumentor/reflection-docblock": "^5.6",
         "phpstan/phpdoc-parser": "^2.1",
         "symfony/asset": "7.2.*",
@@ -23,6 +24,7 @@
         "symfony/form": "7.2.*",
         "symfony/framework-bundle": "7.2.*",
         "symfony/http-client": "7.2.*",
+        "symfony/http-foundation": "7.2.*",
         "symfony/intl": "7.2.*",
         "symfony/mailer": "7.2.*",
         "symfony/mime": "7.2.*",
@@ -38,11 +40,14 @@
         "symfony/string": "7.2.*",
         "symfony/translation": "7.2.*",
         "symfony/twig-bundle": "7.2.*",
+        "symfony/ux-live-component": "^2.23",
         "symfony/ux-turbo": "^2.23",
         "symfony/validator": "7.2.*",
         "symfony/web-link": "7.2.*",
+        "symfony/webpack-encore-bundle": "^2.2",
         "symfony/yaml": "7.2.*",
         "twig/extra-bundle": "^2.12|^3.0",
+        "twig/string-extra": "^3.20",
         "twig/twig": "^2.12|^3.0"
     },
     "config": {
@@ -97,6 +102,8 @@
         }
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^4.1",
+        "fakerphp/faker": "^1.24",
         "phpunit/phpunit": "^9.5",
         "symfony/browser-kit": "7.2.*",
         "symfony/css-selector": "7.2.*",

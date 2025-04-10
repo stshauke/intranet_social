@@ -1,0 +1,24 @@
+{# templates/message/_modal.html.twig #}
+<div class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Envoyer un message à {{ recipient.fullName }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+
+            <div class="modal-body">
+                {{ form_start(form) }}
+                    <div class="mb-3">
+                        {{ form_label(form.content) }}
+                        {{ form_widget(form.content, { 'attr': { 'class': 'form-control', 'rows': '4', 'placeholder': 'Votre message...' } }) }}
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">Envoyer</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>

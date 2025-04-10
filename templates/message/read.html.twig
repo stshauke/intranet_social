@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Message de {{ message.sender.fullName }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">Message de {{ message.sender.fullName }}</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Expéditeur :</strong> {{ message.sender.fullName }}<br>
+            <strong>Destinataire :</strong> {{ message.recipient.fullName }}<br>
+            <strong>Date d'envoi :</strong> {{ message.createdAt|date('d/m/Y H:i') }}
+        </div>
+        <div class="card-body">
+            <p class="card-text">{{ message.content|nl2br }}</p>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_message') }}" class="btn btn-secondary">Retour à la messagerie</a>
+
+        {# ✅ Afficher bouton Modifier si admin ou expéditeur #}
+        {% if is_granted('ROLE_ADMIN') or message.sender == app.user %}
+            <a href="{{ path('app_message_edit', {'id': message.id}) }}" class="btn btn-primary">Modifier</a>
+        {% endif %}
+
+        {# ✅ Afficher bouton Supprimer si admin ou expéditeur #}
+        {% if is_granted('ROLE_ADMIN') or message.sender == app.user %}
+            <form method="post" action="{{ path('app_message_delete', {'id': message.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce message ?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ message.id) }}">
+                <button class="btn btn-danger">Supprimer</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

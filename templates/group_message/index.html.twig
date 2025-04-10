@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Forum - {{ workGroup.name }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">Forum du groupe : {{ workGroup.name }}</h1>
+
+    <div class="card mb-4 p-4">
+        {{ form_start(form) }}
+            <div class="mb-3">
+                {{ form_widget(form.content, {'attr': {'class': 'form-control', 'rows': '5'}}) }}
+            </div>
+            <button class="btn btn-primary">Envoyer</button>
+        {{ form_end(form) }}
+    </div>
+
+    {% if pagination.items %}
+        <div class="list-group mb-4">
+            {% for message in pagination.items %}
+                <div class="list-group-item mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>{{ message.author.fullName }}</strong>
+                        <small class="text-muted">{{ message.createdAt|date('d/m/Y H:i') }}</small>
+                    </div>
+                    <p class="mb-2">{{ message.content|nl2br }}</p>
+                    {% if message.author == app.user or is_granted('ROLE_ADMIN') %}
+                        <div>
+                            <a href="{{ path('app_group_message_edit', {'id': message.id}) }}" class="btn btn-sm btn-outline-secondary">Modifier</a>
+                            <form method="post" action="{{ path('app_group_message_delete', {'id': message.id}) }}" style="display:inline-block;" onsubmit="return confirm('Voulez-vous vraiment supprimer ce message ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ message.id) }}">
+                                <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {{ knp_pagination_render(pagination) }}
+    {% else %}
+        <div class="alert alert-info">Aucun message pour l’instant dans ce groupe.</div>
+    {% endif %}
+</div>
+{% endblock %}

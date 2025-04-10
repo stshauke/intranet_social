@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier l'utilisateur - Admin{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">👤 Modifier l'utilisateur : {{ user.fullName }}</h1>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            {# Image de profil actuelle ou avatar par défaut #}
+            <div class="text-center mb-4">
+                {% if user.profileImage %}
+                    <img src="{{ asset('uploads/profiles/' ~ user.profileImage) }}" alt="Photo de profil" class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary d-flex justify-content-center align-items-center shadow-sm" style="width: 120px; height: 120px; color: white; font-size: 48px;">
+                        {{ user.fullName[:1]|upper }}
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Formulaire #}
+            {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+
+                <div class="mb-3">
+                    {{ form_label(form.fullName, 'Nom complet', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.fullName, {'attr': {'class': 'form-control', 'placeholder': 'Nom complet'}}) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.email, 'Adresse e-mail', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.email, {'attr': {'class': 'form-control', 'placeholder': 'Adresse e-mail'}}) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.bio, 'Biographie', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.bio, {'attr': {'class': 'form-control', 'rows': '4', 'placeholder': 'Parlez un peu de l’utilisateur...'}}) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.profileImage, 'Photo de profil', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.profileImage, {'attr': {'class': 'form-control'}}) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.roles, 'Rôles', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.roles, {'attr': {'class': 'form-select'}}) }}
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">💾 Sauvegarder les modifications</button>
+                    <a href="{{ path('admin_dashboard') }}" class="btn btn-outline-secondary btn-lg">↩️ Retour au tableau de bord</a>
+                </div>
+
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Profil de {{ user.fullName }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Profil de {{ user.fullName }}</h1>
+
+    <div class="row">
+        <div class="col-md-4">
+            {% if user.profileImage %}
+                <img src="{{ asset('uploads/profiles/' ~ user.profileImage) }}" alt="Photo de profil" class="img-fluid rounded mb-3">
+            {% else %}
+                <img src="https://via.placeholder.com/300x300?text=Photo+de+profil" alt="Photo de profil par défaut" class="img-fluid rounded mb-3">
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <ul class="list-group mb-3">
+                <li class="list-group-item">
+                    <strong>Nom complet :</strong> {{ user.fullName }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Email :</strong> {{ user.email }}
+                </li>
+                <li class="list-group-item">
+                    <strong>Biographie :</strong><br>
+                    {% if user.bio %}
+                        {{ user.bio|nl2br }}
+                    {% else %}
+                        <em>Aucune biographie renseignée.</em>
+                    {% endif %}
+                </li>
+                <li class="list-group-item">
+                    <strong>Inscrit le :</strong> {{ user.createdAt|date('d/m/Y H:i') }}
+                </li>
+            </ul>
+
+            {% if app.user and app.user.id == user.id %}
+                <a href="{{ path('app_user_edit', {'id': user.id}) }}" class="btn btn-primary">Modifier mon profil</a>
+            {% endif %}
+            <a href="{{ path('app_home') }}" class="btn btn-secondary">Retour à l'accueil</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

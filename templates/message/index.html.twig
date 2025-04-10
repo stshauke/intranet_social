@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Messagerie{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1 class="mb-4">📨 Messagerie</h1>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">✉️ Envoyer un nouveau message</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{{ path('app_message_send', {'id': users|first.id}) }}">
+                <div class="mb-3">
+                    <label for="recipient" class="form-label fw-bold">Sélectionner un destinataire :</label>
+                    <select id="recipient" name="id" class="form-select select2" required>
+                        <option value="">Choisissez un destinataire</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.fullName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">➡️ Écrire un message</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {# ✅ Messages reçus #}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">📥 Messages reçus</h5>
+                </div>
+                <div class="card-body">
+                    {% if receivedMessages %}
+                        <ul class="list-group">
+                            {% for message in receivedMessages %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ message.sender.fullName }}</div>
+                                        {{ message.content|slice(0, 50) ~ '...' }}
+                                        <br>
+                                        <small class="text-muted">{{ message.createdAt|date('d/m/Y H:i') }}</small>
+                                    </div>
+                                    <div class="btn-group">
+                                        <a href="{{ path('app_message_read', {'id': message.id}) }}" class="btn btn-sm btn-outline-primary" title="Lire">📖</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Aucun message reçu.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# ✅ Messages envoyés #}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">📤 Messages envoyés</h5>
+                </div>
+                <div class="card-body">
+                    {% if sentMessages %}
+                        <ul class="list-group">
+                            {% for message in sentMessages %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ message.recipient.fullName }}</div>
+                                        {{ message.content|slice(0, 50) ~ '...' }}
+                                        <br>
+                                        <small class="text-muted">{{ message.createdAt|date('d/m/Y H:i') }}</small>
+                                    </div>
+                                    <div class="btn-group">
+                                        <a href="{{ path('app_message_read', {'id': message.id}) }}" class="btn btn-sm btn-outline-primary" title="Lire">📖</a>
+                                        <a href="{{ path('app_message_edit', {'id': message.id}) }}" class="btn btn-sm btn-outline-secondary" title="Modifier">✏️</a>
+                                        <form method="post" action="{{ path('app_message_delete', {'id': message.id}) }}" onsubmit="return confirm('Confirmer la suppression ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ message.id) }}">
+                                            <button class="btn btn-sm btn-outline-danger" title="Supprimer">🗑️</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Aucun message envoyé.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

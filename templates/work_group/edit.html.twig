@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le groupe - {{ work_group.name }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">Modifier le groupe : {{ work_group.name }}</h1>
+
+    {{ form_start(form) }}
+        <div class="mb-3">
+            {{ form_row(form.name) }}
+        </div>
+        <div class="mb-3">
+            {{ form_row(form.description) }}
+        </div>
+        <div class="mb-3">
+            {{ form_row(form.isPrivate) }}
+        </div>
+        <div class="mb-3">
+            {{ form_row(form.members, {'attr': {'class': 'select2'}}) }}
+        </div>
+
+        <button class="btn btn-primary">Mettre à jour le groupe</button>
+    {{ form_end(form) }}
+
+    <a href="{{ path('app_work_group_show', {'id': work_group.id}) }}" class="btn btn-secondary mt-3">Retour au groupe</a>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{# templates/registration/register.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte{% endblock %}
+
+{% block body %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title text-center mb-4">Créer un compte</h2>
+
+            {# ✅ Correction ici : ajout de enctype pour permettre le téléchargement de fichier #}
+            {{ form_start(registrationForm, {'attr': {'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+            <div class="mb-3">
+                {{ form_label(registrationForm.fullName, 'Nom complet') }}
+                {{ form_widget(registrationForm.fullName, {'attr': {'class': 'form-control', 'placeholder': 'Votre nom complet'}}) }}
+                {{ form_errors(registrationForm.fullName) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form_label(registrationForm.email, 'Adresse email') }}
+                {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control', 'placeholder': 'exemple@entreprise.com'}}) }}
+                {{ form_errors(registrationForm.email) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form_label(registrationForm.plainPassword, 'Mot de passe') }}
+                {{ form_widget(registrationForm.plainPassword, {'attr': {'class': 'form-control', 'placeholder': 'Choisissez un mot de passe'}}) }}
+                {{ form_errors(registrationForm.plainPassword) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form_label(registrationForm.profileImage, 'Photo de profil (optionnel)') }}
+                {{ form_widget(registrationForm.profileImage, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.profileImage) }}
+            </div>
+
+            <div class="mb-3">
+                {{ form_label(registrationForm.bio, 'Bio (optionnel)') }}
+                {{ form_widget(registrationForm.bio, {'attr': {'class': 'form-control', 'placeholder': 'Parlez de vous...'}}) }}
+                {{ form_errors(registrationForm.bio) }}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Créer mon compte</button>
+
+            {{ form_end(registrationForm) }}
+
+            <div class="text-center mt-3">
+                <small>Déjà inscrit ? <a href="{{ path('app_login') }}">Connectez-vous ici</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

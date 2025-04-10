@@ -1,0 +1,34 @@
+{# templates/post/new.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle publication{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Créer une nouvelle publication 📝</h1>
+
+    {{ form_start(form) }}
+        <div class="mb-3">
+            {{ form_label(form.title) }}
+            {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Titre de la publication'}}) }}
+            {{ form_errors(form.title) }}
+        </div>
+
+        <div class="mb-3">
+            {{ form_label(form.content) }}
+            {{ form_widget(form.content, {'attr': {'class': 'form-control', 'rows': '5', 'placeholder': 'Écrivez ici votre contenu'}}) }}
+            {{ form_errors(form.content) }}
+        </div>
+
+        <div class="mb-3">
+            {{ form_label(form.attachments) }}
+            {{ form_widget(form.attachments, {'attr': {'class': 'form-control', 'multiple': 'multiple'}}) }}
+            <small class="form-text text-muted">Vous pouvez sélectionner plusieurs fichiers.</small>
+            {{ form_errors(form.attachments) }}
+        </div>
+
+        <button type="submit" class="btn btn-success">Publier</button>
+        <a href="{{ path('app_post_index') }}" class="btn btn-secondary">Annuler</a>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

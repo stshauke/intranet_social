@@ -1,0 +1,25 @@
+<ul class="nav flex-column">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_notification_index') }}">🔔 Notifications</a>
+    </li>
+    {% if is_granted('ROLE_ADMIN') %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a>
+    </li>
+    {% endif %}
+</ul>

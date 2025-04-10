@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Publications{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Publications</h1>
+
+    <div class="mb-3 text-end">
+        <a href="{{ path('app_post_new') }}" class="btn btn-primary">+ Nouvelle publication</a>
+    </div>
+
+    {% for post in posts %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">{{ post.title }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    Posté par {{ post.user.fullName }} le {{ post.createdAt|date('d/m/Y H:i') }}
+                </h6>
+                <p class="card-text">{{ post.content|nl2br }}</p>
+
+                <button
+                    class="btn like-post-btn {{ post.isLikedByUser(app.user) ? 'btn-primary' : 'btn-outline-primary' }}"
+                    data-post-id="{{ post.id }}">
+                    👍 J'aime ({{ post.likes|length }})
+                </button>
+
+                <a href="{{ path('app_post_show', {id: post.id}) }}" class="btn btn-secondary">Voir plus</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">Aucune publication pour le moment.</div>
+    {% endfor %}
+
+    <div class="pagination justify-content-center">
+        {{ knp_pagination_render(posts) }}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+/* assets/styles/app.scss */
+
+// ✅ Import Select2 CSS
+@import "~select2/dist/css/select2.min.css";
+
+/* Import Bootstrap */
+@import "~bootstrap/scss/bootstrap";
+
+/* Custom variables */
+:root {
+  --primary-color: #3f51b5;
+  --secondary-color: #ff4081;
+  --background-color: #f5f5f5;
+  --card-bg-color: #ffffff;
+  --text-color: #333333;
+  --border-color: #e0e0e0;
+}
+
+/* Global styles */
+body {
+  background-color: var(--background-color);
+  font-family: 'Roboto', sans-serif;
+  color: var(--text-color);
+}
+
+.navbar-brand {
+  font-weight: bold;
+}
+
+.card {
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  background-color: var(--card-bg-color);
+  margin-bottom: 20px;
+}
+
+.post-card {
+  padding: 20px;
+}
+
+.avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-medium {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+/* ✅ Select2 Custom styles pour que ça colle avec ton thème */
+.select2-container .select2-selection--multiple {
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background-color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: var(--primary-color);
+  border: none;
+  color: #fff;
+  padding: 2px 8px;
+  margin-top: 4px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  color: #fff;
+  margin-right: 4px;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.select2-container .select2-search--inline .select2-search__field {
+  width: auto !important;
+}
+
+
+textarea {
+  resize: vertical;
+  min-height: 150px;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+
+
+.select2-container--default .select2-selection--multiple {
+  min-height: 38px; // Hauteur minimale comme un champ standard
+  max-height: 80px; // Hauteur maximale pour éviter que ça prenne trop de place
+  overflow-y: auto; // Permet de scroller si beaucoup d'éléments sélectionnés
+  padding: 4px;
+}

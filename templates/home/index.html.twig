@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accueil - Intranet Social{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    {# Bannière d’accueil #}
+    <div class="bg-primary text-white p-4 rounded shadow-sm mb-5 text-center">
+        <h1 class="display-5">Bienvenue sur votre Intranet Social 👥</h1>
+        <p class="lead">Retrouvez ici toutes les dernières actualités et publications de vos collègues !</p>
+    </div>
+
+    {# Messages flash #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Publications #}
+    {% if posts|length > 0 %}
+        <div class="row justify-content-center g-4">
+            {% for post in posts %}
+                <div class="col-md-6 d-flex">
+                    <div class="card shadow-sm flex-fill">
+                        <div class="card-body">
+                            {# Auteur #}
+                            <div class="d-flex align-items-center mb-3">
+                                {% if post.user.profileImage %}
+                                    <img src="{{ asset('uploads/profiles/' ~ post.user.profileImage) }}"
+                                         alt="{{ post.user.fullName }}"
+                                         class="rounded-circle me-3"
+                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-3"
+                                         style="width: 50px; height: 50px; font-size: 20px;">
+                                        {{ post.user.fullName[:1]|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h5 class="mb-0">{{ post.user.fullName }}</h5>
+                                    <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
+                                </div>
+                            </div>
+
+                            {# Contenu du post #}
+                            <h5>{{ post.title }}</h5>
+                            <p>{{ post.content|nl2br }}</p>
+
+                            {# Boutons d'action #}
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <form method="post" action="{{ path('app_post_like_ajax', {'id': post.id}) }}">
+                                    <button class="btn {% if post.isLikedByUser(app.user) %}btn-primary{% else %}btn-outline-primary{% endif %} like-post-btn"
+                                            data-post-id="{{ post.id }}">
+                                        👍 J'aime ({{ post.likes|length }})
+                                    </button>
+                                </form>
+
+                                <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-secondary btn-sm">
+                                    Voir plus
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center mt-4">Aucune publication pour le moment.</div>
+    {% endif %}
+</div>
+{% endblock %}

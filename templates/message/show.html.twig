@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Message reçu{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Message de {{ message.sender.fullName }}</h1>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <p><strong>Envoyé le :</strong> {{ message.createdAt|date('d/m/Y à H:i') }}</p>
+            <p>{{ message.content|nl2br }}</p>
+        </div>
+    </div>
+
+    <a href="{{ path('app_message') }}" class="btn btn-secondary">Retour à la liste des messages</a>
+{% endblock %}
