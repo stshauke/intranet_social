@@ -1,6 +1,6 @@
 # 🌐 Intranet Social d'Entreprise
 
-Bienvenue dans le projet **Intranet Social** développé avec **Symfony 6**, **Bootstrap 5**, et des fonctionnalités sociales complètes.
+Bienvenue dans le projet **Intranet Social** développé avec **Symfony 7**, **Bootstrap 5**, et des fonctionnalités sociales complètes.
 
 Ce projet permet de créer un réseau social interne pour entreprise, avec :
 - ✅ Messagerie privée
