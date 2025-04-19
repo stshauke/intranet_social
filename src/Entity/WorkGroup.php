@@ -1,49 +1,63 @@
 <?php
 
+// Déclaration du namespace de l'entité
 namespace App\Entity;
 
+// Importation des classes nécessaires
 use App\Repository\WorkGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+// Déclaration de l'entité WorkGroup avec son repository
 #[ORM\Entity(repositoryClass: WorkGroupRepository::class)]
-#[ORM\HasLifecycleCallbacks]
+#[ORM\HasLifecycleCallbacks] // Permet d'exécuter des méthodes automatiquement (comme @PreUpdate)
 class WorkGroup
 {
+    // Identifiant unique du groupe de travail (clé primaire)
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    // Nom du groupe
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    // Description du groupe
     #[ORM\Column(length: 255)]
     private ?string $description = null;
 
+    // Indique si le groupe est privé (true/false)
     #[ORM\Column]
     private ?bool $isPrivate = false;
 
+    // Créateur du groupe (relation vers User)
     #[ORM\ManyToOne(inversedBy: 'createdGroups')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $creator = null;
 
+    // Liste des membres du groupe (relation ManyToMany avec User)
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'workGroups')]
     private Collection $members;
 
+    // Liste des posts associés au groupe (relation OneToMany)
     #[ORM\OneToMany(mappedBy: 'workGroup', targetEntity: Post::class, orphanRemoval: true)]
     private Collection $posts;
 
+    // Liste des messages associés au groupe (relation OneToMany)
     #[ORM\OneToMany(mappedBy: 'workGroup', targetEntity: GroupMessage::class, orphanRemoval: true)]
     private Collection $messages;
 
+    // Date de création du groupe
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    // Date de dernière mise à jour du groupe
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    // Constructeur : initialise les collections et les dates
     public function __construct()
     {
         $this->members = new ArrayCollection();
@@ -52,6 +66,8 @@ class WorkGroup
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
+
+    // GETTERS & SETTERS
 
     // ID
     public function getId(): ?int
@@ -205,6 +221,7 @@ class WorkGroup
         return $this;
     }
 
+    // Callback exécuté automatiquement avant la mise à jour pour mettre à jour la date
     #[ORM\PreUpdate]
     public function updateTimestamps(): void
     {
