@@ -15,9 +15,9 @@
 {% set route = app.request.attributes.get('_route') %}
 {% set isLoginOrRegister = route in ['app_login', 'app_register'] %}
 
-<body class="d-flex flex-column min-vh-100" >
+<body {% if not isLoginOrRegister %}class="d-flex flex-column min-vh-100"{% endif %}>
 
-    {# ✅ NAVBAR #}
+    {# ✅ Barre de navigation #}
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ path('app_home') }}">🌐 Intranet Social</a>
@@ -72,11 +72,12 @@
         </div>
     </nav>
 
-    {# ✅ CONTENU PRINCIPAL - WRAPPER GROWABLE POUR PUSHER LE FOOTER EN BAS #}
-    <div class="flex-grow-1">
-        <div class="container-fluid" style="margin-top: 70px;">
+    {# ✅ Contenu principal #}
+    <div class="{% if not isLoginOrRegister %}flex-grow-1{% endif %}">
+        <div class="container-fluid" style="{% if not isLoginOrRegister %}margin-top: 70px;{% endif %}">
             <div class="row">
 
+                {# ✅ Sidebar (sauf login/register) #}
                 {% if not isLoginOrRegister %}
                     <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
                         <div class="position-sticky">
@@ -95,7 +96,11 @@
                     </nav>
                 {% endif %}
 
-                <main class="{% if isLoginOrRegister %}col-12 d-flex justify-content-center align-items-center min-vh-100{% else %}col-md-9 ms-sm-auto col-lg-10{% endif %} px-md-4 py-4">
+                {# ✅ Main content (centré verticalement sur login/register) #}
+                <main class="flex-grow-1 {% if isLoginOrRegister %}col-12 d-flex justify-content-center align-items-center{% else %}col-md-9 ms-sm-auto col-lg-10{% endif %} px-md-4 py-4"
+                    style="{% if isLoginOrRegister %}min-height: calc(100vh - 70px);{% endif %}">
+
+
                     {% for label, messages in app.flashes %}
                         {% for message in messages %}
                             <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
@@ -104,6 +109,7 @@
                             </div>
                         {% endfor %}
                     {% endfor %}
+
                     {% block body %}{% endblock %}
                 </main>
 
@@ -111,7 +117,7 @@
         </div>
     </div>
 
-    {# ✅ FOOTER FIXÉ EN BAS #}
+    {# ✅ Footer visible sauf si login/register #}
     <footer class="bg-light text-center text-lg-start mt-auto">
         <div class="container p-3">
             <div class="text-center p-2">
@@ -119,6 +125,7 @@
             </div>
         </div>
     </footer>
+
 
     {% block javascripts %}
         {{ encore_entry_script_tags('app') }}
