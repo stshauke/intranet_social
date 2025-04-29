@@ -8,6 +8,7 @@
     <h1>Créer une nouvelle publication 📝</h1>
 
     {{ form_start(form) }}
+
         <div class="mb-3">
             {{ form_label(form.title) }}
             {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Titre de la publication'}}) }}
@@ -20,15 +21,13 @@
             {{ form_errors(form.content) }}
         </div>
 
-        <div class="mb-3">
-            {{ form_label(form.attachments) }}
-            {{ form_widget(form.attachments, {'attr': {'class': 'form-control', 'multiple': 'multiple'}}) }}
-            <small class="form-text text-muted">Vous pouvez sélectionner plusieurs fichiers.</small>
-            {{ form_errors(form.attachments) }}
-        </div>
-
         <button type="submit" class="btn btn-success">Publier</button>
         <a href="{{ path('app_post_index') }}" class="btn btn-secondary">Annuler</a>
+
+        {# ✅ Ne pas afficher le champ attachments dans le reste #}
+        {% do form.attachments.setRendered %}
+        
     {{ form_end(form) }}
 </div>
 {% endblock %}
+
