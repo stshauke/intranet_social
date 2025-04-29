@@ -11,136 +11,111 @@
         {{ encore_entry_link_tags('app') }}
     {% endblock %}
 </head>
-<body>
 
-    {# ✅ Barre de navigation du haut #}
+{% set route = app.request.attributes.get('_route') %}
+{% set isLoginOrRegister = route in ['app_login', 'app_register'] %}
+
+<body class="d-flex flex-column min-vh-100" >
+
+    {# ✅ NAVBAR #}
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ path('app_home') }}">🌐 Intranet Social</a>
-
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-
-                {# ✅ Notifications + messages dynamiques #}
-                {% if app.request.attributes.get('_route') not in ['app_login', 'app_register'] %}
-                <ul class="navbar-nav ms-auto align-items-center">
-
-                    <li class="nav-item me-3 position-relative">
-                        <a class="nav-link position-relative" href="{{ path('app_notification') }}">
-                            🔔
-                            <span id="notification-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                                0
-                            </span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item me-3 position-relative">
-                        <a class="nav-link position-relative" href="{{ path('app_message') }}">
-                            ✉️
-                            <span id="message-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                                0
-                            </span>
-                        </a>
-                    </li>
-
-                    {# ✅ Profil utilisateur à droite #}
-                    {% if app.user %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                                {% if app.user.profileImage %}
-                                    <img src="{{ asset('uploads/profiles/' ~ app.user.profileImage) }}" alt="Profile" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
-                                {% else %}
-                                    <span class="rounded-circle bg-secondary text-white d-inline-flex justify-content-center align-items-center me-2" style="width: 30px; height: 30px;">
-                                        {{ app.user.fullName[:1]|upper }}
-                                    </span>
-                                {% endif %}
-                                {{ app.user.fullName }}
+                {% if not isLoginOrRegister %}
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        <li class="nav-item me-3 position-relative">
+                            <a class="nav-link" href="{{ path('app_notification') }}">
+                                🔔
+                                <span id="notification-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ path('app_user_profile', {'id': app.user.id}) }}">Mon profil</a></li>
-                                <li><a class="dropdown-item" href="{{ path('app_user_edit', {'id': app.user.id}) }}">Modifier mon profil</a></li>
-                                {% if is_granted('ROLE_ADMIN') %}
-                                    <li><a class="dropdown-item" href="{{ path('admin_dashboard') }}">Administration</a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ path('app_logout') }}">Déconnexion</a></li>
-                            </ul>
                         </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_login') }}">Connexion</a>
+                        <li class="nav-item me-3 position-relative">
+                            <a class="nav-link" href="{{ path('app_message') }}">
+                                ✉️
+                                <span id="message-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
+                            </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_register') }}">Inscription</a>
-                        </li>
-                    {% endif %}
-                </ul>
+                        {% if app.user %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                    {% if app.user.profileImage %}
+                                        <img src="{{ asset('uploads/profiles/' ~ app.user.profileImage) }}" alt="Profile" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                    {% else %}
+                                        <span class="rounded-circle bg-secondary text-white d-inline-flex justify-content-center align-items-center me-2" style="width: 30px; height: 30px;">
+                                            {{ app.user.fullName[:1]|upper }}
+                                        </span>
+                                    {% endif %}
+                                    {{ app.user.fullName }}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ path('app_user_profile', {'id': app.user.id}) }}">Mon profil</a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_user_edit', {'id': app.user.id}) }}">Modifier mon profil</a></li>
+                                    {% if is_granted('ROLE_ADMIN') %}
+                                        <li><a class="dropdown-item" href="{{ path('admin_dashboard') }}">Administration</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_logout') }}">Déconnexion</a></li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item"><a class="nav-link" href="{{ path('app_login') }}">Connexion</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ path('app_register') }}">Inscription</a></li>
+                        {% endif %}
+                    </ul>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    {# ✅ Layout principal #}
-    <div class="container-fluid" style="margin-top: 70px;">
-        <div class="row">
+    {# ✅ CONTENU PRINCIPAL - WRAPPER GROWABLE POUR PUSHER LE FOOTER EN BAS #}
+    <div class="flex-grow-1">
+        <div class="container-fluid" style="margin-top: 70px;">
+            <div class="row">
 
-            {# ✅ Menu rapide latéral gauche - affiché uniquement si ce n'est pas la page de login #}
-            {% if app.request.attributes.get('_route') not in ['app_login', 'app_register'] %}
-                <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
-                    <div class="position-sticky">
-                        <ul class="nav flex-column">
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a>
-                            </li>
-                            {% if is_granted('ROLE_ADMIN') %}
-                                <li class="nav-item mb-2">
-                                    <a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </nav>
-            {% endif %}
-
-            {# ✅ Contenu principal #}
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                {% for label, messages in app.flashes %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                {% if not isLoginOrRegister %}
+                    <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
+                        <div class="position-sticky">
+                            <ul class="nav flex-column">
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a></li>
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <li class="nav-item mb-2"><a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a></li>
+                                {% endif %}
+                            </ul>
                         </div>
-                    {% endfor %}
-                {% endfor %}
+                    </nav>
+                {% endif %}
 
-                {% block body %}{% endblock %}
-            </main>
+                <main class="{% if isLoginOrRegister %}col-12 d-flex justify-content-center align-items-center min-vh-100{% else %}col-md-9 ms-sm-auto col-lg-10{% endif %} px-md-4 py-4">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% block body %}{% endblock %}
+                </main>
+
+            </div>
         </div>
     </div>
 
-    {# ✅ Footer #}
-    <footer class="bg-light text-center text-lg-start mt-4">
+    {# ✅ FOOTER FIXÉ EN BAS #}
+    <footer class="bg-light text-center text-lg-start mt-auto">
         <div class="container p-3">
             <div class="text-center p-2">
-                &copy; 2025 Intranet Social - Tous droits réservés
+                &copy; {{ "now"|date("Y") }} Intranet Social - Tous droits réservés
             </div>
         </div>
     </footer>
@@ -150,9 +125,7 @@
         <script src="{{ asset('js/notifications.js') }}"></script>
         <script src="{{ asset('js/like-post.js') }}"></script>
         <script src="{{ asset('js/user-pagination.js') }}"></script>
-
-        
-    <script src="{{ asset('js/group-message-pagination.js') }}"></script>
+        <script src="{{ asset('js/group-message-pagination.js') }}"></script>
     {% endblock %}
 </body>
 </html>
