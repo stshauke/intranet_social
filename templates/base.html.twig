@@ -23,17 +23,9 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {# Liens principaux dans la barre du haut #}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path('app_post_index') }}">Fil d'actualité</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path('app_user') }}">Annuaire</a>
-                    </li>
-                </ul>
 
                 {# ✅ Notifications + messages dynamiques #}
+                {% if app.request.attributes.get('_route') not in ['app_login', 'app_register'] %}
                 <ul class="navbar-nav ms-auto align-items-center">
 
                     <li class="nav-item me-3 position-relative">
@@ -86,6 +78,7 @@
                         </li>
                     {% endif %}
                 </ul>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -94,36 +87,38 @@
     <div class="container-fluid" style="margin-top: 70px;">
         <div class="row">
 
-            {# ✅ Menu rapide latéral gauche #}
-            <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
-                <div class="position-sticky">
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a>
-                        </li>
-                        {% if is_granted('ROLE_ADMIN') %}
+            {# ✅ Menu rapide latéral gauche - affiché uniquement si ce n'est pas la page de login #}
+            {% if app.request.attributes.get('_route') not in ['app_login', 'app_register'] %}
+                <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
+                    <div class="position-sticky">
+                        <ul class="nav flex-column">
                             <li class="nav-item mb-2">
-                                <a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a>
+                                <a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a>
                             </li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </nav>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a>
+                            </li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a>
+                            </li>
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <li class="nav-item mb-2">
+                                    <a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </nav>
+            {% endif %}
 
             {# ✅ Contenu principal #}
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
