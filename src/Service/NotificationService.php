@@ -88,15 +88,25 @@ class NotificationService
     /**
      * ✅ Notifications pour les membres d’un groupe lorsqu’un message est posté dans le forum
      */
+    // public function notifyGroupMembers(WorkGroup $workGroup, string $message): void
+    // {
+    //     foreach ($workGroup->getMembers() as $member) {
+    //         // Ne pas notifier le créateur du groupe
+    //         if ($member === $workGroup->getCreator()) {
+    //             continue;
+    //         }
+
+    //         // Création de la notification
+    //         $this->createNotification(
+    //             'group_message',
+    //             $message,
+    //             $member
+    //         );
+    //     }
+    // }
     public function notifyGroupMembers(WorkGroup $workGroup, string $message): void
     {
         foreach ($workGroup->getMembers() as $member) {
-            // Ne pas notifier le créateur du groupe
-            if ($member === $workGroup->getCreator()) {
-                continue;
-            }
-
-            // Création de la notification
             $this->createNotification(
                 'group_message',
                 $message,
@@ -104,7 +114,7 @@ class NotificationService
             );
         }
     }
-
+    
     // Récupère toutes les notifications non lues d’un utilisateur, triées par date décroissante
     public function getUnreadNotifications(User $user): array
     {

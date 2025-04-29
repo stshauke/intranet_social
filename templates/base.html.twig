@@ -37,7 +37,7 @@
                 <ul class="navbar-nav ms-auto align-items-center">
 
                     <li class="nav-item me-3 position-relative">
-                        <a class="nav-link position-relative" href="{{ path('app_notification_index') }}">
+                        <a class="nav-link position-relative" href="{{ path('app_notification') }}">
                             🔔
                             <span id="notification-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
                                 0
@@ -114,7 +114,7 @@
                             <a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="{{ path('app_notification_index') }}">🔔 Notifications</a>
+                            <a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a>
                         </li>
                         {% if is_granted('ROLE_ADMIN') %}
                             <li class="nav-item mb-2">

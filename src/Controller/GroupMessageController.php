@@ -84,10 +84,11 @@ class GroupMessageController extends AbstractController
             }
 
             // Notification à tous les membres du groupe qu’un nouveau message a été posté
-            $notificationService->notifyWorkGroupMembers(
-                $workGroup,
-                sprintf('%s a posté un nouveau message dans le groupe "%s".', $this->getUser()->getFullName(), $workGroup->getName())
-            );
+            // $notificationService->notifyWorkGroupMembers(
+            //     $workGroup,
+            //     sprintf('%s a posté un nouveau message dans le groupe "%s".', $this->getUser()->getFullName(), $workGroup->getName())
+            // );
+            $notificationService->notifyGroupMembers($workGroup, sprintf('%s a posté un nouveau message dans le groupe "%s".', $this->getUser()->getFullName(), $workGroup->getName()));
 
             // Redirection pour éviter la double soumission du formulaire
             return $this->redirectToRoute('app_group_message_index', ['id' => $workGroup->getId()]);
