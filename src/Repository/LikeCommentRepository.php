@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\LikeComment;
+use App\Entity\Comment;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +18,19 @@ class LikeCommentRepository extends ServiceEntityRepository
         parent::__construct($registry, LikeComment::class);
     }
 
-    //    /**
-    //     * @return LikeComment[] Returns an array of LikeComment objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('l.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Vérifie si un utilisateur a liké un commentaire.
+     */
+    public function isCommentLikedByUser(Comment $comment, User $user): bool
+    {
+        $like = $this->createQueryBuilder('lc')
+            ->andWhere('lc.comment = :comment')
+            ->andWhere('lc.user = :user')
+            ->setParameter('comment', $comment)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
 
-    //    public function findOneBySomeField($value): ?LikeComment
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        return $like !== null;
+    }
 }

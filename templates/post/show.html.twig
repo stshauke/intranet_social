@@ -4,36 +4,58 @@
 
 {% block body %}
 <div class="container mt-4">
-    <h1>{{ post.title }}</h1>
-    <p class="text-muted">Par {{ post.user.fullName }} le {{ post.createdAt|date('d/m/Y H:i') }}</p>
-    <p>{{ post.content|nl2br }}</p>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">{{ post.title }}</h5>
+            <p class="card-text">{{ post.content|nl2br }}</p>
 
-    <button
-        class="btn like-post-btn {{ post.isLikedByUser(app.user) ? 'btn-primary' : 'btn-outline-primary' }}"
-        data-post-id="{{ post.id }}">
-        👍 J'aime ({{ post.likes|length }})
-    </button>
-
-    <hr>
-
-    <h4>Commentaires ({{ comments|length }})</h4>
-
-    {% for comment in comments %}
-        <div class="mb-3 p-3 border rounded">
-            <strong>{{ comment.user.fullName }}</strong> le {{ comment.createdAt|date('d/m/Y H:i') }} :
-            <p class="mb-0">{{ comment.content|nl2br }}</p>
+            {# Like du post #}
+            <button class="btn like-post-btn {{ post.isLikedByUser(app.user) ? 'btn-primary' : 'btn-outline-primary' }}"
+                data-post-id="{{ post.id }}">
+                👍 J'aime ({{ post.likes|length }})
+            </button>
         </div>
-    {% else %}
-        <div class="alert alert-info">Aucun commentaire pour l’instant.</div>
-    {% endfor %}
+    </div>
 
-    <hr>
-    <h5>Ajouter un commentaire</h5>
-    {{ form_start(commentForm) }}
-        {{ form_row(commentForm.content) }}
-        <button class="btn btn-primary">Commenter</button>
-    {{ form_end(commentForm) }}
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Commentaires</h5>
+        </div>
 
-    <a href="{{ path('app_post_index') }}" class="btn btn-secondary mt-3">← Retour aux publications</a>
+        <div class="card-body">
+            {{ form_start(commentForm) }}
+                {{ form_widget(commentForm.content, {'attr': {'class': 'form-control mb-2', 'placeholder': 'Écrire un commentaire...'}}) }}
+                <button class="btn btn-primary">Commenter</button>
+            {{ form_end(commentForm) }}
+        </div>
+
+        <div class="list-group list-group-flush">
+            {% for comment in comments %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ comment.user.fullName }}</strong>
+                        <small class="text-muted">{{ comment.createdAt|date('d/m/Y H:i') }}</small>
+                    </div>
+                    <p>{{ comment.content|nl2br }}</p>
+
+                    {# Like sur commentaire #}
+                    <button class="btn like-comment-btn {{ likeCommentRepo.isCommentLikedByUser(comment, app.user) ? 'btn-success' : 'btn-outline-success' }}"
+                        data-comment-id="{{ comment.id }}">
+                        ❤️ J'aime ({{ comment.likeComments|length }})
+                    </button>
+                </div>
+            {% else %}
+                <div class="list-group-item text-center text-muted">
+                    Aucun commentaire pour l’instant.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/like-post.js') }}"></script>
+    <script src="{{ asset('js/like-comment.js') }}"></script>
 {% endblock %}
