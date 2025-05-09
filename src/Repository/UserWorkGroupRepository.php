@@ -2,13 +2,12 @@
 
 namespace App\Repository;
 
+use App\Entity\User;
 use App\Entity\UserWorkGroup;
+use App\Entity\WorkGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<UserWorkGroup>
- */
 class UserWorkGroupRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,28 +15,17 @@ class UserWorkGroupRepository extends ServiceEntityRepository
         parent::__construct($registry, UserWorkGroup::class);
     }
 
-//    /**
-//     * @return UserWorkGroup[] Returns an array of UserWorkGroup objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('u.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?UserWorkGroup
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    /**
+     * Vérifie si un utilisateur est membre d’un groupe.
+     */
+    public function isMember(User $user, WorkGroup $group): bool
+    {
+        return (bool) $this->createQueryBuilder('uwg')
+            ->andWhere('uwg.user = :user')
+            ->andWhere('uwg.workGroup = :group')
+            ->setParameter('user', $user)
+            ->setParameter('group', $group)
+            ->getQuery()
+            ->setMaxResults(1);
+    }
 }

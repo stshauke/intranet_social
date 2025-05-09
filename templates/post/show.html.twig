@@ -1,61 +1,80 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ post.title }}{% endblock %}
+{% block title %}{{ post.title }} - Intranet Social{% endblock %}
 
 {% block body %}
 <div class="container mt-4">
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title">{{ post.title }}</h5>
-            <p class="card-text">{{ post.content|nl2br }}</p>
-
-            {# Like du post #}
-            <button class="btn like-post-btn {{ post.isLikedByUser(app.user) ? 'btn-primary' : 'btn-outline-primary' }}"
-                data-post-id="{{ post.id }}">
-                👍 J'aime ({{ post.likes|length }})
-            </button>
-        </div>
-    </div>
-
     <div class="card shadow-sm">
-        <div class="card-header">
-            <h5>Commentaires</h5>
-        </div>
-
         <div class="card-body">
-            {{ form_start(commentForm) }}
-                {{ form_widget(commentForm.content, {'attr': {'class': 'form-control mb-2', 'placeholder': 'Écrire un commentaire...'}}) }}
-                <button class="btn btn-primary">Commenter</button>
-            {{ form_end(commentForm) }}
-        </div>
+            <h2 class="card-title">{{ post.title }}</h2>
+            <p class="card-text">{{ post.content|nl2br }}</p>
+            <p class="text-muted">Publié par {{ post.author.fullName }} le {{ post.createdAt|date('d/m/Y H:i') }}</p>
 
-        <div class="list-group list-group-flush">
-            {% for comment in comments %}
-                <div class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <strong>{{ comment.user.fullName }}</strong>
-                        <small class="text-muted">{{ comment.createdAt|date('d/m/Y H:i') }}</small>
+            {# ✅ Affichage des pièces jointes #}
+            {% if post.attachments is defined and post.attachments|length > 0 %}
+                <div class="mt-4">
+                    <h5>📎 Pièces jointes</h5>
+                    <div class="row g-3">
+                        {% for attachment in post.attachments %}
+                            {% set path = 'uploads/attachments/' ~ attachment.filename %}
+                            {% if attachment.mimeType starts with 'image/' %}
+                                <div class="col-md-4">
+                                    <a href="{{ asset(path) }}" target="_blank">
+                                        <img src="{{ asset(path) }}" alt="Image" class="img-fluid rounded border" style="max-height: 200px;">
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="col-12">
+                                    📄 <a href="{{ asset(path) }}" target="_blank">{{ attachment.originalFilename }}</a>
+                                    <small class="text-muted">({{ attachment.mimeType }}, {{ attachment.size / 1024 | number_format(1) }} Ko)</small>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
                     </div>
-                    <p>{{ comment.content|nl2br }}</p>
+                </div>
+            {% endif %}
 
-                    {# Like sur commentaire #}
-                    <button class="btn like-comment-btn {{ likeCommentRepo.isCommentLikedByUser(comment, app.user) ? 'btn-success' : 'btn-outline-success' }}"
-                        data-comment-id="{{ comment.id }}">
-                        ❤️ J'aime ({{ comment.likeComments|length }})
+            {# Vérification d'accès #}
+            {% set group = post.workGroup %}
+            {% set isMember = false %}
+            {% if group %}
+                {% for link in group.userLinks %}
+                    {% if link.user == app.user %}
+                        {% set isMember = true %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {% if not group or isMember or group.moderators.contains(app.user) %}
+                <form method="post" action="{{ path('app_post_like_ajax', {'id': post.id}) }}" class="mt-4">
+                    <button class="btn {% if post.isLikedByUser(app.user) %}btn-primary{% else %}btn-outline-primary{% endif %} like-post-btn"
+                            data-post-id="{{ post.id }}">
+                        👍 J'aime ({{ post.likes|length }})
                     </button>
-                </div>
+                </form>
+
+                <h5 class="mt-4">Commentaires</h5>
+                {% for comment in post.comments %}
+                    <div class="mb-3 border-bottom pb-2">
+                        <strong>{{ comment.author.fullName }}</strong>
+                        <span class="text-muted">le {{ comment.createdAt|date('d/m/Y H:i') }}</span>
+                        <p class="mt-1">{{ comment.content|nl2br }}</p>
+                    </div>
+                {% else %}
+                    <p>Aucun commentaire pour le moment.</p>
+                {% endfor %}
+
+                <h5 class="mt-4">Ajouter un commentaire</h5>
+                {{ form_start(commentForm) }}
+                    {{ form_row(commentForm.content) }}
+                    <button class="btn btn-primary">Publier</button>
+                {{ form_end(commentForm) }}
             {% else %}
-                <div class="list-group-item text-center text-muted">
-                    Aucun commentaire pour l’instant.
+                <div class="alert alert-warning mt-4">
+                    Vous n'avez pas accès à cette publication.
                 </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block javascripts %}
-    {{ parent() }}
-    <script src="{{ asset('js/like-post.js') }}"></script>
-    <script src="{{ asset('js/like-comment.js') }}"></script>
 {% endblock %}

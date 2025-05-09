@@ -1,78 +1,81 @@
 <?php
 
-// Déclaration du namespace du formulaire
 namespace App\Form;
 
-// Importation de l'entité liée au formulaire
 use App\Entity\Post;
-
-// Importation des types de champs pour le formulaire
+use App\Entity\WorkGroup;
+use App\Repository\WorkGroupRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\FormBuilderInterface;
-
-// Configuration des options du formulaire
 use Symfony\Component\OptionsResolver\OptionsResolver;
-
-// Contraintes de validation pour les fichiers uploadés
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\All;
+use Symfony\Component\Validator\Constraints\File;
+use Symfony\Bundle\SecurityBundle\Security; // ✅ CORRECT ici (au lieu de Component\Security\Core\Security)
 
-// Déclaration de la classe PostType utilisée pour créer ou modifier un post
 class PostType extends AbstractType
 {
-    // Méthode de construction du formulaire
+    private Security $security;
+
+    public function __construct(Security $security)
+    {
+        $this->security = $security;
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $user = $this->security->getUser();
+
         $builder
-            // Champ de saisie pour le titre de la publication
             ->add('title', TextType::class, [
-                'label' => 'Titre de la publication',
-                'attr' => ['placeholder' => 'Saisir le titre de votre publication'],
+                'label' => 'Titre de la publication'
             ])
-            // Champ de saisie pour le contenu (zone de texte multilignes)
             ->add('content', TextareaType::class, [
-                'label' => 'Contenu de la publication',
-                'attr' => ['rows' => 5, 'placeholder' => 'Exprimez-vous ici...'],
+                'label' => 'Contenu'
             ])
-            // Champ de téléchargement de fichiers (images ou PDF)
+            ->add('workGroup', EntityType::class, [
+                'class' => WorkGroup::class,
+                'choice_label' => 'name',
+                'label' => 'Groupe de travail (facultatif)',
+                'required' => false,
+                'query_builder' => function (WorkGroupRepository $repo) use ($user) {
+                    return $repo->createQueryBuilder('g')
+                        ->leftJoin('g.userLinks', 'link')
+                        ->where('g.type = :public')
+                        ->orWhere('link.user = :user')
+                        ->setParameter('public', 'public')
+                        ->setParameter('user', $user);
+                }
+            ])
             ->add('attachments', FileType::class, [
-                'label' => 'Ajouter des fichiers ou images',
-                'mapped' => false, // Ce champ n’est pas lié directement à l’entité Post
-                'multiple' => true, // Autorise le téléchargement de plusieurs fichiers
-                'required' => false, // Champ optionnel
+                'label' => 'Fichiers joints',
+                'mapped' => false,
+                'required' => false,
+                'multiple' => true,
                 'constraints' => [
-                    // Appliquer les contraintes à tous les fichiers uploadés
                     new All([
                         'constraints' => [
                             new File([
-                                'maxSize' => '5M', // Taille maximale par fichier
+                                'maxSize' => '5M',
                                 'mimeTypes' => [
                                     'image/jpeg',
                                     'image/png',
                                     'application/pdf',
-                                    'image/webp',
                                 ],
-                                'mimeTypesMessage' => 'Merci d\'uploader des fichiers valides (JPEG, PNG, WebP ou PDF)',
                             ])
-                        ],
+                        ]
                     ])
                 ],
-                // Attribut HTML : accepte uniquement certains types de fichiers côté client
-                'attr' => [
-                    'accept' => 'image/*,application/pdf'
-                ]
-            ])
-        ;
+            ]);
     }
 
-    // Configuration du formulaire : association avec l'entité Post
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Post::class, // L'entité à laquelle le formulaire est lié
+            'data_class' => Post::class,
         ]);
     }
 }

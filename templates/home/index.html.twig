@@ -10,7 +10,16 @@
         <p class="lead">Retrouvez ici toutes les dernières actualités et publications de vos collègues !</p>
     </div>
 
-    {# Messages flash #}
+    {# ✅ Bouton de création #}
+    {% if app.user %}
+        <div class="mb-4 text-end">
+            <a href="{{ path('post_new') }}" class="btn btn-success">
+                ➕ Créer une publication
+            </a>
+        </div>
+    {% endif %}
+
+    {# Flash messages #}
     {% for label, messages in app.flashes %}
         {% for message in messages %}
             <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
@@ -29,19 +38,19 @@
                         <div class="card-body">
                             {# Auteur #}
                             <div class="d-flex align-items-center mb-3">
-                                {% if post.user.profileImage %}
-                                    <img src="{{ asset('uploads/profiles/' ~ post.user.profileImage) }}"
-                                         alt="{{ post.user.fullName }}"
+                                {% if post.author and post.author.profileImage %}
+                                    <img src="{{ asset('uploads/profiles/' ~ post.author.profileImage) }}"
+                                         alt="{{ post.author.fullName }}"
                                          class="rounded-circle me-3"
                                          style="width: 50px; height: 50px; object-fit: cover;">
                                 {% else %}
                                     <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-3"
                                          style="width: 50px; height: 50px; font-size: 20px;">
-                                        {{ post.user.fullName[:1]|upper }}
+                                        {{ post.author.fullName[:1]|upper }}
                                     </div>
                                 {% endif %}
                                 <div>
-                                    <h5 class="mb-0">{{ post.user.fullName }}</h5>
+                                    <h5 class="mb-0">{{ post.author.fullName }}</h5>
                                     <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
                                 </div>
                             </div>
@@ -50,7 +59,30 @@
                             <h5>{{ post.title }}</h5>
                             <p>{{ post.content|nl2br }}</p>
 
-                            {# Boutons d'action #}
+                            {# ✅ Pièces jointes #}
+                            {% if post.attachments is defined and post.attachments|length > 0 %}
+                                <div class="mt-3">
+                                    <h6>Fichiers joints :</h6>
+                                    <ul class="list-unstyled">
+                                        {% for attachment in post.attachments %}
+                                            {% set path = 'uploads/attachments/' ~ attachment.filename %}
+                                            {% if attachment.mimeType starts with 'image/' %}
+                                                <li class="mb-2">
+                                                    <img src="{{ asset(path) }}" alt="image" class="img-fluid rounded" style="max-height: 250px;">
+                                                </li>
+                                            {% else %}
+                                                <li>
+                                                    📎 <a href="{{ asset(path) }}" target="_blank">
+                                                        {{ attachment.originalFilename }}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {# Actions #}
                             <div class="d-flex justify-content-between align-items-center mt-3">
                                 <form method="post" action="{{ path('app_post_like_ajax', {'id': post.id}) }}">
                                     <button class="btn {% if post.isLikedByUser(app.user) %}btn-primary{% else %}btn-outline-primary{% endif %} like-post-btn"

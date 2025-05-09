@@ -18,12 +18,12 @@ class Comment
     private ?int $id = null;
 
     #[ORM\Column(type: 'text')]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'Le commentaire ne peut pas être vide.')]
     private ?string $content = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $user = null;
+    private ?User $author = null;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
@@ -59,19 +59,17 @@ class Comment
     public function setContent(string $content): self
     {
         $this->content = $content;
-
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getAuthor(): ?User
     {
-        return $this->user;
+        return $this->author;
     }
 
-    public function setUser(?User $user): self
+    public function setAuthor(?User $author): self
     {
-        $this->user = $user;
-
+        $this->author = $author;
         return $this;
     }
 
@@ -83,7 +81,6 @@ class Comment
     public function setPost(?Post $post): self
     {
         $this->post = $post;
-
         return $this;
     }
 
@@ -95,7 +92,6 @@ class Comment
     public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
@@ -120,7 +116,6 @@ class Comment
     public function removeLikeComment(LikeComment $likeComment): self
     {
         if ($this->likeComments->removeElement($likeComment)) {
-            // Set the owning side to null (unless already changed)
             if ($likeComment->getComment() === $this) {
                 $likeComment->setComment(null);
             }
@@ -129,7 +124,6 @@ class Comment
         return $this;
     }
 
-    // ✅ Fonction utilitaire pour vérifier si l'utilisateur a liké
     public function isLikedByUser(?User $user): bool
     {
         foreach ($this->likeComments as $likeComment) {

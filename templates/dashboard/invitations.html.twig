@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}📨 Mes Invitations{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">📨 Mes Invitations</h1>
+
+    <h3>Invitations Reçues</h3>
+    {% if invitations_received is not empty %}
+        <ul class="list-group mb-4">
+            {% for invitation in invitations_received %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        Groupe : <strong>{{ invitation.group.name }}</strong><br>
+                        Envoyé par : {{ invitation.invitedBy.fullName }}<br>
+                        Date : {{ invitation.createdAt|date('d/m/Y H:i') }}
+                    </div>
+                    <div>
+                        {% if invitation.status == 'pending' %}
+                            <form method="post" action="{{ path('group_invitation_accept', { id: invitation.id }) }}" class="d-inline">
+                                <button class="btn btn-success btn-sm">Accepter</button>
+                            </form>
+                            <form method="post" action="{{ path('group_invitation_decline', { id: invitation.id }) }}" class="d-inline">
+                                <button class="btn btn-warning btn-sm">Refuser</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ path('group_invitation_delete', { id: invitation.id }) }}" class="d-inline ms-2" onsubmit="return confirm('Supprimer cette invitation ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ invitation.id) }}">
+                            <button class="btn btn-danger btn-sm">Supprimer</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted">Aucune invitation reçue.</p>
+    {% endif %}
+
+    <h3>Invitations Envoyées</h3>
+    {% if invitations_sent is not empty %}
+        <ul class="list-group">
+            {% for invitation in invitations_sent %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        À : <strong>{{ invitation.invitedUser.fullName }}</strong><br>
+                        Groupe : {{ invitation.group.name }}<br>
+                        Statut : 
+                        {% if invitation.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">En attente</span>
+                        {% elseif invitation.status == 'accepted' %}
+                            <span class="badge bg-success">Acceptée</span>
+                        {% elseif invitation.status == 'declined' %}
+                            <span class="badge bg-danger">Refusée</span>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{{ path('group_invitation_delete', { id: invitation.id }) }}" class="d-inline" onsubmit="return confirm('Supprimer cette invitation ?')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ invitation.id) }}">
+                        <button class="btn btn-danger btn-sm">Supprimer</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted">Aucune invitation envoyée.</p>
+    {% endif %}
+</div>
+{% endblock %}

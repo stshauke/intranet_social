@@ -2,19 +2,19 @@
 
 namespace App\Controller;
 
+use App\Entity\Like;
 use App\Entity\Post;
 use App\Entity\Comment;
-use App\Entity\Like;
-use App\Form\PostType;
+use App\Entity\Attachment;
 use App\Form\CommentType;
+use App\Form\PostType;
+use App\Repository\LikeRepository;
 use App\Repository\PostRepository;
 use App\Repository\CommentRepository;
-use App\Repository\LikeRepository;
-use App\Repository\LikeCommentRepository;
-use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
-use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -24,40 +24,56 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 class PostController extends AbstractController
 {
     #[Route('/', name: 'app_post_index', methods: ['GET'])]
-    public function index(PostRepository $postRepository, PaginatorInterface $paginator, Request $request): Response
+    public function index(PostRepository $postRepository): Response
     {
-        $query = $postRepository->createQueryBuilder('p')
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery();
-
-        $pagination = $paginator->paginate(
-            $query,
-            $request->query->getInt('page', 1),
-            5
-        );
+        $user = $this->getUser();
+        $posts = $postRepository->findVisiblePosts($user);
 
         return $this->render('post/index.html.twig', [
-            'posts' => $pagination,
+            'posts' => $posts,
         ]);
     }
 
-    #[Route('/new', name: 'app_post_new')]
-    public function new(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger, NotificationService $notificationService): Response
+    #[Route('/new', name: 'post_new')]
+    public function new(Request $request, EntityManagerInterface $em, SluggerInterface $slugger): Response
     {
         $post = new Post();
+        $post->setAuthor($this->getUser());
+
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $post->setUser($this->getUser());
             $post->setCreatedAt(new \DateTimeImmutable());
-            $post->setUpdatedAt(new \DateTimeImmutable());
+            $em->persist($post);
 
-            $entityManager->persist($post);
-            $entityManager->flush();
+            $files = $form->get('attachments')->getData();
+            foreach ($files as $file) {
+                $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeFilename = $slugger->slug($originalFilename);
+                $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
 
-            $notificationService->notifyWorkGroupMembers($post);
+                try {
+                    $file->move(
+                        $this->getParameter('attachments_directory'),
+                        $newFilename
+                    );
 
+                    $attachment = new Attachment();
+                    $attachment->setFilename($newFilename);
+                    $attachment->setOriginalFilename($file->getClientOriginalName());
+                    $attachment->setMimeType($file->getMimeType());
+                    $attachment->setSize($file->getSize());
+                    $attachment->setPost($post);
+
+                    $em->persist($attachment);
+                } catch (FileException $e) {
+                    $this->addFlash('error', "Erreur lors du téléchargement d'un fichier joint.");
+                }
+            }
+
+            $em->flush();
+            $this->addFlash('success', 'Publication créée avec succès.');
             return $this->redirectToRoute('app_post_index');
         }
 
@@ -67,81 +83,92 @@ class PostController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_post_show', methods: ['GET', 'POST'])]
-    public function show(
-        Post $post,
-        Request $request,
-        EntityManagerInterface $entityManager,
-        CommentRepository $commentRepository,
-        LikeCommentRepository $likeCommentRepo,
-        NotificationService $notificationService
-    ): Response {
-        $comment = new Comment();
-        $form = $this->createForm(CommentType::class, $comment);
-        $form->handleRequest($request);
+    public function show(Post $post, Request $request, EntityManagerInterface $em, CommentRepository $commentRepo): Response
+    {
+        $user = $this->getUser();
+        $group = $post->getWorkGroup();
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $comment->setUser($this->getUser());
-            $comment->setPost($post);
-            $comment->setCreatedAt(new \DateTimeImmutable());
-
-            $entityManager->persist($comment);
-            $entityManager->flush();
-
-            if ($post->getUser() !== $this->getUser()) {
-                $notificationService->createNotification(
-                    'new_comment',
-                    'Un utilisateur a commenté votre publication.',
-                    $post->getUser(),
-                    $post,
-                    $comment
-                );
+        if ($group) {
+            if ($group->getType() === 'private' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
+                throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
             }
 
-            $this->addFlash('success', 'Commentaire ajouté avec succès.');
+            if ($group->getType() === 'secret' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
+                throw $this->createNotFoundException('Publication introuvable.');
+            }
+        }
+
+        $comment = new Comment();
+        $comment->setPost($post);
+        $comment->setAuthor($user); // ✅ Correction ici
+        $commentForm = $this->createForm(CommentType::class, $comment);
+        $commentForm->handleRequest($request);
+
+        if ($commentForm->isSubmitted() && $commentForm->isValid()) {
+            $em->persist($comment);
+            $em->flush();
+            $this->addFlash('success', 'Commentaire publié.');
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
         }
 
-        $comments = $commentRepository->findBy(['post' => $post], ['createdAt' => 'ASC']);
+        $comments = $commentRepo->findBy(['post' => $post], ['createdAt' => 'ASC']);
 
         return $this->render('post/show.html.twig', [
             'post' => $post,
-            'commentForm' => $form->createView(),
-            'comments' => $comments, // ✅ Ici j'envoie bien les comments
-            'likeCommentRepo' => $likeCommentRepo,
+            'comments' => $comments,
+            'commentForm' => $commentForm->createView(),
         ]);
     }
 
-    #[Route('/{id}/like-ajax', name: 'app_post_like_ajax', methods: ['POST'])]
-    public function likeAjax(Post $post, LikeRepository $likeRepository, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}/delete', name: 'post_delete', methods: ['POST'])]
+    public function delete(Request $request, Post $post, EntityManagerInterface $em): Response
     {
+        $group = $post->getWorkGroup();
         $user = $this->getUser();
 
-        if (!$user) {
-            return $this->json(['error' => 'Vous devez être connecté pour aimer'], 403);
+        if ($user !== $post->getAuthor() && (!$group || !$group->getModerators()->contains($user))) {
+            throw $this->createAccessDeniedException();
         }
 
-        $like = $likeRepository->findOneBy(['user' => $user, 'post' => $post]);
+        if ($this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
+            $em->remove($post);
+            $em->flush();
+            $this->addFlash('success', 'Publication supprimée.');
+        }
+
+        return $group
+            ? $this->redirectToRoute('workgroup_show', ['id' => $group->getId()])
+            : $this->redirectToRoute('app_post_index');
+    }
+
+    #[Route('/{id}/like-ajax', name: 'app_post_like_ajax', methods: ['POST'])]
+    public function likeAjax(Post $post, LikeRepository $likeRepo, EntityManagerInterface $em): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Non autorisé'], 403);
+        }
+
+        $like = $likeRepo->findOneBy(['user' => $user, 'post' => $post]);
 
         if ($like) {
-            $entityManager->remove($like);
+            $em->remove($like);
             $liked = false;
         } else {
             $like = new Like();
             $like->setUser($user);
             $like->setPost($post);
             $like->setCreatedAt(new \DateTimeImmutable());
-
-            $entityManager->persist($like);
+            $em->persist($like);
             $liked = true;
         }
 
-        $entityManager->flush();
+        $em->flush();
+        $likeCount = $likeRepo->count(['post' => $post]);
 
-        $likeCount = $likeRepository->count(['post' => $post]);
-
-        return $this->json([
+        return new JsonResponse([
             'liked' => $liked,
-            'likeCount' => $likeCount
+            'likeCount' => $likeCount,
         ]);
     }
 }

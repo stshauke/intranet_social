@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le groupe{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">✏️ Modifier le Groupe</h1>
+
+    {{ form_start(form) }}
+
+    <div class="mb-3">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name, { 'attr': {'class': 'form-control'} }) }}
+        {{ form_errors(form.name) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.type) }}
+        {{ form_widget(form.type, { 'attr': {'class': 'form-select'} }) }}
+        {{ form_errors(form.type) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description, { 'attr': {'class': 'form-control'} }) }}
+        {{ form_errors(form.description) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.moderators) }}
+        {{ form_widget(form.moderators, { 'attr': {'class': 'form-control select2'} }) }}
+        {{ form_errors(form.moderators) }}
+    </div>
+
+    <button type="submit" class="btn btn-success">💾 Enregistrer</button>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

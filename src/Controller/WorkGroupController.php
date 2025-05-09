@@ -1,155 +1,155 @@
 <?php
 
-// Déclaration du namespace
 namespace App\Controller;
 
-// Importation des entités utilisées
-use App\Entity\User;
+use App\Entity\UserWorkGroup;
 use App\Entity\WorkGroup;
-
-// Importation des formulaires et repositories
 use App\Form\WorkGroupType;
-use App\Repository\WorkGroupRepository;
-
-// Importation des services nécessaires
+use App\Repository\UserWorkGroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-// Définition de la route de base pour toutes les routes de ce contrôleur
-#[Route('/work/group')]
+#[Route('/workgroup')]
 class WorkGroupController extends AbstractController
 {
-    // Route pour afficher la liste de tous les groupes de travail
-    #[Route('/', name: 'app_work_group', methods: ['GET'])]
-    public function index(WorkGroupRepository $workGroupRepository): Response
+    #[Route('/', name: 'workgroup_list')]
+    public function list(EntityManagerInterface $em): Response
     {
-        // Rendu de la vue avec tous les groupes récupérés depuis le repository
-        return $this->render('work_group/index.html.twig', [
-            'work_groups' => $workGroupRepository->findAll(),
+        $groups = $em->getRepository(WorkGroup::class)->findVisibleToUser($this->getUser());
+
+        return $this->render('workgroup/list.html.twig', [
+            'workGroups' => $groups,
         ]);
     }
 
-    // Route pour créer un nouveau groupe de travail
-    #[Route('/new', name: 'app_work_group_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('/new', name: 'workgroup_new')]
+    public function new(Request $request, EntityManagerInterface $em): Response
     {
-        $workGroup = new WorkGroup(); // Création d'un nouvel objet WorkGroup
-
-        // Création du formulaire lié au groupe
-        $form = $this->createForm(WorkGroupType::class, $workGroup);
+        $group = new WorkGroup();
+        $form = $this->createForm(WorkGroupType::class, $group);
         $form->handleRequest($request);
 
-        // Si le formulaire est soumis et valide
         if ($form->isSubmitted() && $form->isValid()) {
-            // Attribution de l'utilisateur connecté comme créateur du groupe
-            $workGroup->setCreator($this->getUser());
+            $creator = $this->getUser();
+            $group->setCreator($creator);
 
-            // Récupération des membres sélectionnés dans le formulaire
-            $members = $form->get('members')->getData();
-            foreach ($members as $member) {
-                $workGroup->addMember($member); // Ajout des membres au groupe
+            $em->persist($group);
+
+            // Le créateur est automatiquement membre
+            $userLink = new UserWorkGroup();
+            $userLink->setUser($creator);
+            $userLink->setWorkGroup($group);
+            $userLink->setIsAdmin(true);
+            $em->persist($userLink);
+
+            // Ajouter les modérateurs
+            foreach ($form->get('moderators')->getData() as $moderator) {
+                $group->addModerator($moderator);
+
+                // Lier aussi comme membre
+                $link = new UserWorkGroup();
+                $link->setUser($moderator);
+                $link->setWorkGroup($group);
+                $link->setIsAdmin(false);
+                $em->persist($link);
             }
 
-            // Sauvegarde du groupe
-            $entityManager->persist($workGroup);
-            $entityManager->flush();
+            $em->flush();
 
-            // Message de confirmation
             $this->addFlash('success', 'Groupe créé avec succès.');
-
-            // Redirection vers la liste des groupes
-            return $this->redirectToRoute('app_work_group');
+            return $this->redirectToRoute('workgroup_list');
         }
 
-        // Affichage du formulaire de création
-        return $this->render('work_group/new.html.twig', [
+        return $this->render('workgroup/new.html.twig', [
             'form' => $form->createView(),
         ]);
     }
 
-    // Route pour afficher un groupe spécifique
-    #[Route('/{id}', name: 'app_work_group_show', methods: ['GET'])]
-    public function show(WorkGroup $workGroup): Response
+    #[Route('/{id}', name: 'workgroup_show')]
+    public function show(WorkGroup $workGroup, UserWorkGroupRepository $uwgRepo): Response
     {
-        // Affichage du détail du groupe
-        return $this->render('work_group/show.html.twig', [
-            'work_group' => $workGroup,
+        $user = $this->getUser();
+        $isMember = $uwgRepo->isMember($user, $workGroup);
+
+        if ($workGroup->getType() === 'private' && !$isMember) {
+            throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
+        }
+
+        if ($workGroup->getType() === 'secret' && !$isMember) {
+            throw $this->createNotFoundException('Groupe introuvable.');
+        }
+
+        $userLinks = $uwgRepo->findBy(['workGroup' => $workGroup]);
+
+        return $this->render('workgroup/show.html.twig', [
+            'workGroup' => $workGroup,
+            'userLinks' => $userLinks,
         ]);
     }
 
-    // Route pour modifier un groupe existant
-    #[Route('/{id}/edit', name: 'app_work_group_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, WorkGroup $workGroup, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}/edit', name: 'workgroup_edit')]
+    public function edit(Request $request, WorkGroup $workGroup, EntityManagerInterface $em, UserWorkGroupRepository $uwgRepo): Response
     {
-        // Création du formulaire de modification
+        $user = $this->getUser();
+
+        if ($user !== $workGroup->getCreator() && !$workGroup->getModerators()->contains($user)) {
+            throw $this->createAccessDeniedException("Seuls le créateur ou un modérateur peuvent modifier ce groupe.");
+        }
+
         $form = $this->createForm(WorkGroupType::class, $workGroup);
         $form->handleRequest($request);
 
-        // Si le formulaire est soumis et valide
         if ($form->isSubmitted() && $form->isValid()) {
-            // Suppression des membres précédents
-            foreach ($workGroup->getMembers() as $member) {
-                $workGroup->removeMember($member);
+
+            // Nettoyer les anciens liens membres
+            $oldLinks = $uwgRepo->findBy(['workGroup' => $workGroup]);
+            foreach ($oldLinks as $link) {
+                $em->remove($link);
             }
 
-            // Ajout des nouveaux membres sélectionnés
-            $members = $form->get('members')->getData();
-            foreach ($members as $member) {
-                $workGroup->addMember($member);
+            // Ajouter à nouveau le créateur
+            $creatorLink = new UserWorkGroup();
+            $creatorLink->setUser($workGroup->getCreator());
+            $creatorLink->setWorkGroup($workGroup);
+            $creatorLink->setIsAdmin(true);
+            $em->persist($creatorLink);
+
+            // Modérateurs = membres aussi
+            $workGroup->getModerators()->clear();
+            foreach ($form->get('moderators')->getData() as $moderator) {
+                $workGroup->addModerator($moderator);
+
+                $link = new UserWorkGroup();
+                $link->setUser($moderator);
+                $link->setWorkGroup($workGroup);
+                $link->setIsAdmin(false);
+                $em->persist($link);
             }
 
-            // Mise à jour en base
-            $entityManager->flush();
+            $em->flush();
 
-            // Message de succès
-            $this->addFlash('success', 'Groupe mis à jour avec succès.');
-
-            // Redirection vers la page du groupe
-            return $this->redirectToRoute('app_work_group_show', ['id' => $workGroup->getId()]);
+            $this->addFlash('success', 'Groupe mis à jour.');
+            return $this->redirectToRoute('workgroup_show', ['id' => $workGroup->getId()]);
         }
 
-        // Affichage du formulaire de modification
-        return $this->render('work_group/edit.html.twig', [
+        return $this->render('workgroup/edit.html.twig', [
             'form' => $form->createView(),
-            'work_group' => $workGroup,
+            'workGroup' => $workGroup,
         ]);
     }
 
-    // Route pour supprimer un groupe de travail
-    #[Route('/{id}/delete', name: 'app_work_group_delete', methods: ['POST'])]
-    public function delete(Request $request, WorkGroup $workGroup, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}/delete', name: 'workgroup_delete', methods: ['POST'])]
+    public function delete(Request $request, WorkGroup $workGroup, EntityManagerInterface $em): Response
     {
-        // Vérifie la validité du token CSRF pour sécuriser la suppression
         if ($this->isCsrfTokenValid('delete' . $workGroup->getId(), $request->request->get('_token'))) {
-
-            // ✅ Nettoyage manuel de la table pivot user_work_group
-            $connection = $entityManager->getConnection();
-            $connection->executeStatement('DELETE FROM user_work_group WHERE work_group_id = :id', [
-                'id' => $workGroup->getId(),
-            ]);
-
-            // ✅ Suppression des publications liées au groupe
-            foreach ($workGroup->getPosts() as $post) {
-                $entityManager->remove($post);
-            }
-
-            // ✅ Suppression des messages liés au forum du groupe
-            foreach ($workGroup->getMessages() as $message) {
-                $entityManager->remove($message);
-            }
-
-            // ✅ Suppression du groupe lui-même
-            $entityManager->remove($workGroup);
-            $entityManager->flush();
-
-            // Message flash de confirmation
-            $this->addFlash('success', 'Le groupe a été supprimé avec succès.');
+            $em->remove($workGroup);
+            $em->flush();
+            $this->addFlash('success', 'Groupe supprimé.');
         }
 
-        // Redirection vers la liste des groupes
-        return $this->redirectToRoute('app_work_group');
+        return $this->redirectToRoute('workgroup_list');
     }
 }

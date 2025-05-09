@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\User;
 use App\Entity\WorkGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -16,28 +17,27 @@ class WorkGroupRepository extends ServiceEntityRepository
         parent::__construct($registry, WorkGroup::class);
     }
 
-//    /**
-//     * @return WorkGroup[] Returns an array of WorkGroup objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('w')
-//            ->andWhere('w.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('w.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * Retourne les groupes visibles pour un utilisateur.
+     * - Publics pour tout le monde
+     * - Privés ou secrets seulement pour les membres
+     */
+    public function findVisibleToUser(?User $user): array
+    {
+        $qb = $this->createQueryBuilder('g')
+            ->leftJoin('g.userLinks', 'link')
+            ->addSelect('link');
 
-//    public function findOneBySomeField($value): ?WorkGroup
-//    {
-//        return $this->createQueryBuilder('w')
-//            ->andWhere('w.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($user) {
+            $qb->where('g.type = :public')
+                ->orWhere('link.user = :user')
+                ->setParameter('public', 'public')
+                ->setParameter('user', $user);
+        } else {
+            $qb->where('g.type = :public')
+               ->setParameter('public', 'public');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

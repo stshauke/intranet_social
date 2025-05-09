@@ -5,10 +5,11 @@
     <title>{% block title %}Intranet Social{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>👥</text></svg>">
-    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='96'>👥</text></svg>'" type="image/svg+xml">
+
     {% block stylesheets %}
         {{ encore_entry_link_tags('app') }}
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     {% endblock %}
 </head>
 
@@ -17,7 +18,6 @@
 
 <body {% if not isLoginOrRegister %}class="d-flex flex-column min-vh-100"{% endif %}>
 
-    {# ✅ Barre de navigation #}
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ path('app_home') }}">🌐 Intranet Social</a>
@@ -28,18 +28,8 @@
             <div class="collapse navbar-collapse" id="navbarContent">
                 {% if not isLoginOrRegister %}
                     <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item me-3 position-relative">
-                            <a class="nav-link" href="{{ path('app_notification') }}">
-                                🔔
-                                <span id="notification-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
-                            </a>
-                        </li>
-                        <li class="nav-item me-3 position-relative">
-                            <a class="nav-link" href="{{ path('app_message') }}">
-                                ✉️
-                                <span id="message-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;">0</span>
-                            </a>
-                        </li>
+                        <li class="nav-item me-3"><a class="nav-link" href="{{ path('app_notification') }}">🔔</a></li>
+                        <li class="nav-item me-3"><a class="nav-link" href="{{ path('app_message') }}">✉️</a></li>
                         {% if app.user %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
@@ -72,12 +62,9 @@
         </div>
     </nav>
 
-    {# ✅ Contenu principal #}
     <div class="{% if not isLoginOrRegister %}flex-grow-1{% endif %}">
         <div class="container-fluid" style="{% if not isLoginOrRegister %}margin-top: 70px;{% endif %}">
             <div class="row">
-
-                {# ✅ Sidebar (sauf login/register) #}
                 {% if not isLoginOrRegister %}
                     <nav class="col-md-2 d-none d-md-block bg-light sidebar py-4">
                         <div class="position-sticky">
@@ -85,7 +72,8 @@
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_home') }}">🏠 Accueil</a></li>
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a></li>
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a></li>
-                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_work_group') }}">👨‍👩‍👧‍👦 Groupes de travail</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('workgroup_list') }}">👨‍👩‍👧‍👦 Groupes</a></li>
+                                <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_dashboard_invitations') }}">📨 Invitations</a></li>
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a></li>
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a></li>
                                 {% if is_granted('ROLE_ADMIN') %}
@@ -96,11 +84,8 @@
                     </nav>
                 {% endif %}
 
-                {# ✅ Main content (centré verticalement sur login/register) #}
                 <main class="flex-grow-1 {% if isLoginOrRegister %}col-12 d-flex justify-content-center align-items-center{% else %}col-md-9 ms-sm-auto col-lg-10{% endif %} px-md-4 py-4"
-                    style="{% if isLoginOrRegister %}min-height: calc(100vh - 70px);{% endif %}">
-
-
+                      style="{% if isLoginOrRegister %}min-height: calc(100vh - 70px);{% endif %}">
                     {% for label, messages in app.flashes %}
                         {% for message in messages %}
                             <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
@@ -112,12 +97,10 @@
 
                     {% block body %}{% endblock %}
                 </main>
-
             </div>
         </div>
     </div>
 
-    {# ✅ Footer visible sauf si login/register #}
     <footer class="bg-light text-center text-lg-start mt-auto">
         <div class="container p-3">
             <div class="text-center p-2">
@@ -126,13 +109,23 @@
         </div>
     </footer>
 
-
     {% block javascripts %}
         {{ encore_entry_script_tags('app') }}
         <script src="{{ asset('js/notifications.js') }}"></script>
         <script src="{{ asset('js/like-post.js') }}"></script>
         <script src="{{ asset('js/user-pagination.js') }}"></script>
         <script src="{{ asset('js/group-message-pagination.js') }}"></script>
+
+        {# ✅ Select2 JS #}
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                $('.select2').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%'
+                });
+            });
+        </script>
     {% endblock %}
 </body>
 </html>

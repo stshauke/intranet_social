@@ -1,45 +1,50 @@
 <?php
 
-// Déclaration du namespace du repository
 namespace App\Repository;
 
-// Importation des entités utilisées dans les requêtes
 use App\Entity\Post;
 use App\Entity\User;
-
-// Importation des classes de base pour les repositories Doctrine
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-// Déclaration du repository pour l'entité Post
+/**
+ * @extends ServiceEntityRepository<Post>
+ */
 class PostRepository extends ServiceEntityRepository
 {
-    // Constructeur injectant le ManagerRegistry et liant le repository à l'entité Post
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
     }
 
-    // Récupère les publications à afficher sur la page d’accueil d’un utilisateur
-    public function findHomePosts(User $user): array
+    /**
+     * Récupère les publications visibles par un utilisateur :
+     * - Si le post est sans groupe, il est public
+     * - Si le groupe est public, il est visible
+     * - Si le groupe est privé/secret, seulement les membres/modérateurs peuvent le voir
+     */
+    public function findVisiblePosts(?User $user): array
     {
-        $qb = $this->createQueryBuilder('p') // Création du QueryBuilder avec alias 'p' pour Post
-            ->leftJoin('p.workGroup', 'g') // Jointure avec le groupe de travail
-            ->leftJoin('g.userWorkGroupMembers', 'gm') // Jointure avec les membres du groupe
-            ->where('gm.user = :user OR p.workGroup IS NULL') // Conditions : soit le user est membre du groupe, soit le post est public
-            ->setParameter('user', $user) // Définition du paramètre : utilisateur connecté
-            ->orderBy('p.createdAt', 'DESC'); // Tri par date de création décroissante
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.workGroup', 'g')
+            ->leftJoin('g.moderators', 'm')
+            ->leftJoin('g.userLinks', 'link')
+            ->addSelect('g');
 
-        return $qb->getQuery()->getResult(); // Exécution de la requête et retour des résultats
-    }
+        if ($user) {
+            $qb->andWhere('g.id IS NULL OR g.type = :publicType')
+                ->orWhere('link.user = :user')
+                ->orWhere('m = :user')
+                ->setParameter('publicType', 'public')
+                ->setParameter('user', $user);
+        } else {
+            $qb->andWhere('g IS NULL OR g.type = :publicType')
+               ->setParameter('publicType', 'public');
+        }
 
-    // Récupère toutes les publications publiques (non associées à un groupe)
-    public function findPublicPosts(): array
-    {
-        return $this->createQueryBuilder('p') // Création du QueryBuilder
-            ->where('p.workGroup IS NULL') // Filtre : seulement les posts publics
-            ->orderBy('p.createdAt', 'DESC') // Tri par date décroissante
+        return $qb
+            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
-            ->getResult(); // Exécution de la requête et retour des résultats
+            ->getResult();
     }
 }
