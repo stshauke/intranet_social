@@ -3,10 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use App\Entity\NotificationPreference;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -41,6 +44,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $updatedAt = null;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: NotificationPreference::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $notificationPreferences;
+
+    public function __construct()
+    {
+        $this->notificationPreferences = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -62,7 +73,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return (string) $this->email;
     }
 
-    // Compatibilité avec certains composants ou Symfony <6
     public function getUsername(): string
     {
         return $this->getUserIdentifier();
@@ -72,7 +82,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
@@ -95,7 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // Si tu stockes des données temporaires sensibles, nettoie-les ici
+        // Nettoyer les données sensibles temporaires si besoin
     }
 
     public function getFullName(): ?string
@@ -164,5 +173,49 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUpdatedAtValue(): void
     {
         $this->updatedAt = new \DateTime();
+    }
+
+    // === Notifications (déjà présent)
+    public function getUnreadNotifications(): array
+    {
+        return array_filter($this->notifications->toArray(), fn($n) => !$n->isRead());
+    }
+
+    // === Préférences de notifications
+    public function getNotificationPreferences(): Collection
+    {
+        return $this->notificationPreferences;
+    }
+
+    public function addNotificationPreference(NotificationPreference $preference): self
+    {
+        if (!$this->notificationPreferences->contains($preference)) {
+            $this->notificationPreferences[] = $preference;
+            $preference->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotificationPreference(NotificationPreference $preference): self
+    {
+        if ($this->notificationPreferences->removeElement($preference)) {
+            if ($preference->getUser() === $this) {
+                $preference->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getNotificationPreferenceForType(string $type): ?NotificationPreference
+    {
+        foreach ($this->notificationPreferences as $pref) {
+            if ($pref->getType() === $type) {
+                return $pref;
+            }
+        }
+
+        return null;
     }
 }

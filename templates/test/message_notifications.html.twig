@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Test Notifications Messages{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1>🔔 Test des notifications de type "message"</h1>
+
+    {% if notifications is empty %}
+        <div class="alert alert-warning">Aucune notification de message trouvée.</div>
+    {% else %}
+        <table class="table table-bordered table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>#ID</th>
+                    <th>Message</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th>Vers message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notif in notifications %}
+                    <tr>
+                        <td>{{ notif.id }}</td>
+                        <td>{{ notif.message }}</td>
+                        <td>
+                            {% if notif.isRead %}
+                                <span class="badge bg-success">Lu</span>
+                            {% else %}
+                                <span class="badge bg-danger">Non lu</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ notif.createdAt|date('d/m/Y H:i') }}</td>
+                        <td>
+                            {% if notif.relatedMessage %}
+                                <a href="{{ path('app_message_read', { id: notif.relatedMessage.id }) }}" class="btn btn-sm btn-primary">
+                                    Ouvrir
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Aucun message lié</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

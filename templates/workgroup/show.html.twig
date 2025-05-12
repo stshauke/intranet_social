@@ -1,68 +1,113 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Détails du Groupe{% endblock %}
+{% block title %}{{ workGroup.name }} | Groupe{% endblock %}
 
 {% block body %}
 <div class="container mt-4">
-    <h1 class="mb-4">👁️ Détails du Groupe</h1>
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-4 text-center">👁️ Détails du Groupe</h1>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title">{{ workGroup.name }}</h5>
-            <p class="card-text">
-                <strong>Description :</strong> {{ workGroup.description|default('Aucune description') }}<br>
-                <strong>Type :</strong>
-                {% if workGroup.type == 'public' %}
-                    <span class="badge bg-success">Public</span>
-                {% elseif workGroup.type == 'private' %}
-                    <span class="badge bg-warning text-dark">Privé</span>
-                {% elseif workGroup.type == 'secret' %}
-                    <span class="badge bg-danger">Secret</span>
-                {% endif %}<br>
-                <strong>Créateur :</strong> {{ workGroup.creator.fullName }}
-            </p>
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">{{ workGroup.name }}</h4>
+                    <p class="mb-2 text-muted">{{ workGroup.description|default('Aucune description') }}</p>
 
-            <div class="mt-4">
-                <h6>👥 Membres du groupe :</h6>
-                {% if userLinks is defined and userLinks is not empty %}
-                    <ul>
-                        {% for link in userLinks %}
-                            <li>{{ link.user.fullName }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">Aucun membre actuellement.</p>
-                {% endif %}
+                    <p>
+                        <strong>Type :</strong>
+                        {% if workGroup.type == 'public' %}
+                            <span class="badge bg-success">Public</span>
+                        {% elseif workGroup.type == 'private' %}
+                            <span class="badge bg-warning text-dark">Privé</span>
+                        {% elseif workGroup.type == 'secret' %}
+                            <span class="badge bg-danger">Secret</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Créateur :</strong> {{ workGroup.creator.fullName }}</p>
+
+                    <div class="mt-3">
+                        <h6>👥 Membres</h6>
+                        {% if userLinks is defined and userLinks is not empty %}
+                            <ul class="list-unstyled">
+                                {% for link in userLinks %}
+                                    <li>• {{ link.user.fullName }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">Aucun membre actuellement.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>🛡️ Modérateurs</h6>
+                        {% if workGroup.moderators is not empty %}
+                            <ul class="list-unstyled">
+                                {% for moderator in workGroup.moderators %}
+                                    <li>• {{ moderator.fullName }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">Aucun modérateur défini.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        {% if app.user == workGroup.creator or workGroup.moderators.contains(app.user) %}
+                            <a href="{{ path('workgroup_edit', { id: workGroup.id }) }}" class="btn btn-sm btn-outline-primary">✏️ Modifier</a>
+                            <form method="post" action="{{ path('workgroup_delete', { id: workGroup.id }) }}"
+                                  onsubmit="return confirm('Confirmer la suppression ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ workGroup.id) }}">
+                                <button class="btn btn-sm btn-outline-danger">🗑 Supprimer</button>
+                            </form>
+                            <a href="{{ path('group_invitation_invite', { id: workGroup.id }) }}" class="btn btn-sm btn-outline-secondary">
+                                📧 Inviter
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('workgroup_list') }}" class="btn btn-sm btn-secondary ms-auto">↩️ Retour</a>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-4">
-                <h6>🛡️ Modérateurs :</h6>
-                {% if workGroup.moderators is not empty %}
-                    <ul>
-                        {% for moderator in workGroup.moderators %}
-                            <li>{{ moderator.fullName }}</li>
+            {% if form is defined %}
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">📝 Nouvelle publication</h5>
+                        {{ form_start(form) }}
+                            <div class="mb-3">{{ form_row(form.title) }}</div>
+                            <div class="mb-3">{{ form_row(form.content) }}</div>
+                            <div class="mb-3">{{ form_row(form.attachments) }}</div>
+                            <input type="hidden" name="post[workGroup]" value="{{ workGroup.id }}">
+                            <button type="submit" class="btn btn-primary">Publier</button>
+                        {{ form_end(form) }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">📰 Publications récentes</h5>
+
+                    {% if posts is not empty %}
+                        {% for post in posts %}
+                            <div class="mb-4 border-bottom pb-3">
+                                <h6>{{ post.title }}</h6>
+                                <p>{{ post.content }}</p>
+                                <small class="text-muted">Par {{ post.author.fullName }} le {{ post.createdAt|date('d/m/Y H:i') }}</small>
+
+                                {% if app.user == post.author or workGroup.moderators.contains(app.user) %}
+                                    <form method="post" action="{{ path('post_delete', { id: post.id }) }}"
+                                          onsubmit="return confirm('Confirmer la suppression de cette publication ?');"
+                                          class="mt-2">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                                        <button class="btn btn-sm btn-outline-danger">🗑 Supprimer</button>
+                                    </form>
+                                {% endif %}
+                            </div>
                         {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">Aucun modérateur défini.</p>
-                {% endif %}
-            </div>
-
-            <div class="mt-4 d-flex gap-2">
-                {% if app.user == workGroup.creator or workGroup.moderators.contains(app.user) %}
-                    <a href="{{ path('workgroup_edit', { id: workGroup.id }) }}" class="btn btn-primary">✏️ Modifier</a>
-
-                    <form method="post" action="{{ path('workgroup_delete', { id: workGroup.id }) }}"
-                          onsubmit="return confirm('Confirmer la suppression ?');">
-                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ workGroup.id) }}">
-                        <button class="btn btn-danger">🗑️ Supprimer</button>
-                    </form>
-
-                    <a href="{{ path('group_invitation_invite', { id: workGroup.id }) }}" class="btn btn-outline-primary">
-                        📧 Inviter un utilisateur
-                    </a>
-                {% endif %}
-                <a href="{{ path('workgroup_list') }}" class="btn btn-secondary">↩️ Retour</a>
+                    {% else %}
+                        <p class="text-muted">Aucune publication dans ce groupe.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

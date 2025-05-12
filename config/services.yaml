@@ -1,5 +1,3 @@
-# config/services.yaml
-
 parameters:
     locale: 'fr'
     attachments_directory: '%kernel.project_dir%/public/uploads/attachments'
@@ -19,4 +17,10 @@ services:
 
     App\Form\PostType:
         arguments:
-            $security: '@security.helper'
+            $security: '@Symfony\Bundle\SecurityBundle\Security'
+
+    App\EventListener\NotificationSubscriber:
+        arguments:
+            $security: '@Symfony\Bundle\SecurityBundle\Security'
+        tags:
+            - { name: kernel.event_subscriber }

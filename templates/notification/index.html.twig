@@ -9,18 +9,45 @@
     {% if notifications %}
         <ul class="list-group">
             {% for notification in notifications %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <span class="mark-read-icon me-3" data-id="{{ notification.id }}" style="cursor:pointer;">
-                            {% if notification.isRead %}
-                                ✅
+                <li class="list-group-item d-flex justify-content-between align-items-start {% if not notification.isRead %}bg-light{% endif %}">
+                    <div class="d-flex align-items-start w-100">
+                        <span class="me-3 mt-1" data-id="{{ notification.id }}" style="cursor:pointer;">
+                            {% if notification.type == 'new_post' %}
+                                📝
+                            {% elseif notification.type == 'new_comment' %}
+                                💬
+                            {% elseif notification.type == 'new_like' %}
+                                👍
+                            {% elseif notification.type == 'mention' %}
+                                📢
+                            {% elseif notification.type == 'message' %}
+                                ✉️
                             {% else %}
-                                🔵
+                                🔔
                             {% endif %}
                         </span>
-                        <div>
-                            <strong>{{ notification.message }}</strong><br>
-                            <small class="text-muted">{{ notification.createdAt|date('d/m/Y H:i') }}</small>
+                        <div class="flex-grow-1">
+                            <div class="{% if not notification.isRead %}fw-bold{% endif %}">
+                                {{ notification.message }}
+                            </div>
+                            <div class="text-muted small">{{ notification.createdAt|date('d/m/Y H:i') }}</div>
+
+                            {% if notification.relatedPost %}
+                                <a href="{{ path('app_post_show', {'id': notification.relatedPost.id}) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                    Voir le post
+                                </a>
+                            {% elseif notification.relatedComment %}
+                                <a href="{{ path('app_post_show', {'id': notification.relatedComment.post.id}) ~ '#comment-' ~ notification.relatedComment.id }}" class="btn btn-sm btn-outline-success mt-2">
+                                    Voir le commentaire
+                                </a>
+                            {% elseif notification.relatedMessage %}
+                                <a href="{{ path('app_message_read', {'id': notification.relatedMessage.id}) }}" class="btn btn-sm btn-outline-danger mt-2">
+                                    Lire le message
+                                </a>
+                                <div class="small text-success mt-1">🟢 Message ID lié : {{ notification.relatedMessage.id }}</div>
+                            {% elseif notification.type == 'message' %}
+                                <div class="small text-danger mt-1">❌ Notification de message sans message lié</div>
+                            {% endif %}
                         </div>
                     </div>
                 </li>

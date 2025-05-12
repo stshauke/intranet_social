@@ -2,9 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Post;
 use App\Entity\UserWorkGroup;
 use App\Entity\WorkGroup;
+use App\Form\PostType;
 use App\Form\WorkGroupType;
+use App\Repository\PostRepository;
 use App\Repository\UserWorkGroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -69,10 +72,15 @@ class WorkGroupController extends AbstractController
     }
 
     #[Route('/{id}', name: 'workgroup_show')]
-    public function show(WorkGroup $workGroup, UserWorkGroupRepository $uwgRepo): Response
-    {
+    public function show(
+        WorkGroup $workGroup,
+        UserWorkGroupRepository $uwgRepo,
+        PostRepository $postRepo,
+        Request $request,
+        EntityManagerInterface $em
+    ): Response {
         $user = $this->getUser();
-        $isMember = $uwgRepo->isMember($user, $workGroup);
+        $isMember = $uwgRepo->findOneBy(['user' => $user, 'workGroup' => $workGroup]) !== null;
 
         if ($workGroup->getType() === 'private' && !$isMember) {
             throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
@@ -84,9 +92,27 @@ class WorkGroupController extends AbstractController
 
         $userLinks = $uwgRepo->findBy(['workGroup' => $workGroup]);
 
+        $post = new Post();
+        $post->setWorkGroup($workGroup);
+        $form = $this->createForm(PostType::class, $post);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $post->setAuthor($user);
+            $em->persist($post);
+            $em->flush();
+
+            $this->addFlash('success', 'Publication créée avec succès.');
+            return $this->redirectToRoute('workgroup_show', ['id' => $workGroup->getId()]);
+        }
+
+        $posts = $postRepo->findBy(['workGroup' => $workGroup], ['createdAt' => 'DESC']);
+
         return $this->render('workgroup/show.html.twig', [
             'workGroup' => $workGroup,
             'userLinks' => $userLinks,
+            'form' => $form->createView(),
+            'posts' => $posts,
         ]);
     }
 

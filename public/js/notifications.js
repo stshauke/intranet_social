@@ -7,19 +7,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const messageMenu = document.getElementById('messageDropdownMenu');
 
     function loadNotifications() {
-        fetch('/notifications/ajax/unread')
-            .then(response => response.json())
+        fetch('/notification/ajax/unread')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors du chargement des notifications');
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('🔔 Notifications chargées :', data.notifications);
+                notificationMenu.innerHTML = '';
+
                 if (data.count > 0) {
                     notificationCount.style.display = 'inline-block';
                     notificationCount.textContent = data.count;
-                } else {
-                    notificationCount.style.display = 'none';
-                }
 
-                notificationMenu.innerHTML = '';
-
-                if (data.notifications.length > 0) {
                     data.notifications.forEach(notification => {
                         const item = document.createElement('li');
                         const link = document.createElement('a');
@@ -27,9 +29,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         link.href = notification.url;
                         link.textContent = notification.message;
 
+                        // Marquer comme lue au clic
                         link.addEventListener('click', function (event) {
                             event.preventDefault();
-                            fetch(`/notifications/mark-as-read/${notification.id}`)
+                            fetch(`/notification/${notification.id}/mark-read`, { method: 'POST' })
                                 .then(() => {
                                     window.location.href = notification.url;
                                 });
@@ -43,18 +46,61 @@ document.addEventListener('DOMContentLoaded', function () {
                     divider.innerHTML = '<hr class="dropdown-divider">';
                     notificationMenu.appendChild(divider);
 
-                    notificationMenu.appendChild(markAllReadButton.parentElement);
+                    if (markAllReadButton) {
+                        const markAllItem = document.createElement('li');
+                        markAllItem.appendChild(markAllReadButton);
+                        notificationMenu.appendChild(markAllItem);
+                    }
                 } else {
+                    notificationCount.style.display = 'none';
                     const item = document.createElement('li');
                     item.innerHTML = '<span class="dropdown-item text-muted">Aucune nouvelle notification</span>';
                     notificationMenu.appendChild(item);
                 }
             })
             .catch(error => {
-                console.error('Erreur notifications :', error);
+                console.error('❌ Erreur notifications :', error.message);
             });
     }
 
+    function loadMessages() {
+        fetch('/message/ajax/unread')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors du chargement des messages');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('✉️ Messages chargés :', data.messages);
+                messageMenu.innerHTML = '';
+
+                if (data.count > 0) {
+                    messageCount.style.display = 'inline-block';
+                    messageCount.textContent = data.count;
+
+                    data.messages.forEach(message => {
+                        const item = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.classList.add('dropdown-item');
+                        link.href = `/message/read/${message.id}`;
+                        link.textContent = `${message.sender} : ${message.content}`;
+                        item.appendChild(link);
+                        messageMenu.appendChild(item);
+                    });
+                } else {
+                    messageCount.style.display = 'none';
+                    const item = document.createElement('li');
+                    item.innerHTML = '<span class="dropdown-item text-muted">Aucun nouveau message</span>';
+                    messageMenu.appendChild(item);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erreur chargement messages :', error.message);
+            });
+    }
+
+    // Chargement initial
     if (notificationCount && notificationMenu) {
         loadNotifications();
         setInterval(loadNotifications, 30000);
@@ -63,46 +109,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (markAllReadButton) {
         markAllReadButton.addEventListener('click', function (event) {
             event.preventDefault();
-            fetch('/notifications/mark-all-as-read')
-                .then(() => {
-                    loadNotifications();
-                });
+            fetch('/notification/mark-all-read', { method: 'POST' })
+                .then(() => loadNotifications());
         });
-    }
-
-    function loadMessages() {
-        fetch('/message/ajax/unread')
-            .then(response => response.json())
-            .then(data => {
-                if (data.count > 0) {
-                    messageCount.style.display = 'inline-block';
-                    messageCount.textContent = data.count;
-                } else {
-                    messageCount.style.display = 'none';
-                }
-
-                messageMenu.innerHTML = '';
-
-                if (data.messages.length > 0) {
-                    data.messages.forEach(message => {
-                        const item = document.createElement('li');
-                        const link = document.createElement('a');
-                        link.classList.add('dropdown-item');
-                        link.href = `/message/read/${message.id}`;
-                        link.textContent = `${message.sender} : ${message.content}`;
-
-                        item.appendChild(link);
-                        messageMenu.appendChild(item);
-                    });
-                } else {
-                    const item = document.createElement('li');
-                    item.innerHTML = '<span class="dropdown-item text-muted">Aucun nouveau message</span>';
-                    messageMenu.appendChild(item);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur chargement messages :', error);
-            });
     }
 
     if (messageCount && messageMenu) {

@@ -150,4 +150,18 @@ class Notification
         $this->relatedComment = $relatedComment;
         return $this;
     }
+    #[ORM\ManyToOne]
+private ?Message $relatedMessage = null;
+
+public function getRelatedMessage(): ?Message
+{
+    return $this->relatedMessage;
+}
+
+public function setRelatedMessage(?Message $relatedMessage): static
+{
+    $this->relatedMessage = $relatedMessage;
+    return $this;
+}
+
 }

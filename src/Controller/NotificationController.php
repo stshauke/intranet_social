@@ -6,6 +6,7 @@ use App\Entity\Notification;
 use App\Repository\NotificationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -26,11 +27,9 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/mark-all-read', name: 'app_notification_mark_all_read', methods: ['POST'])]
-    public function markAllRead(
-        NotificationRepository $notificationRepository,
-        EntityManagerInterface $entityManager
-    ): Response {
-        $notifications = $notificationRepository->findBy([
+    public function markAllRead(EntityManagerInterface $entityManager, NotificationRepository $repo): Response
+    {
+        $notifications = $repo->findBy([
             'user' => $this->getUser(),
             'isRead' => false
         ]);
@@ -56,6 +55,47 @@ class NotificationController extends AbstractController
             $entityManager->flush();
         }
 
-        return new Response(null, 204); // 204 = succès silencieux
+        return new Response(null, 204);
+    }
+
+    #[Route('/ajax/unread', name: 'notifications_ajax_unread', methods: ['GET'])]
+    public function unreadNotifications(NotificationRepository $repo): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user) {
+            return new JsonResponse(['count' => 0, 'notifications' => []]);
+        }
+
+        $notifications = $repo->findUnreadByUser($user, 10);
+
+        $data = [];
+
+        foreach ($notifications as $notif) {
+            $url = '#';
+
+            if ($notif->getRelatedPost()) {
+                $url = $this->generateUrl('app_post_show', ['id' => $notif->getRelatedPost()->getId()]);
+            } elseif ($notif->getRelatedComment()) {
+                $url = $this->generateUrl('app_post_show', [
+                    'id' => $notif->getRelatedComment()->getPost()->getId()
+                ]) . '#comment-' . $notif->getRelatedComment()->getId();
+            } elseif ($notif->getRelatedMessage()) {
+                $url = $this->generateUrl('app_message_read', [
+                    'id' => $notif->getRelatedMessage()->getId()
+                ]);
+            }
+
+            $data[] = [
+                'id' => $notif->getId(),
+                'message' => $notif->getMessage(),
+                'url' => $url,
+            ];
+        }
+
+        return new JsonResponse([
+            'count' => count($data),
+            'notifications' => $data,
+        ]);
     }
 }
