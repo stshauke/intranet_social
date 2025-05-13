@@ -41,10 +41,14 @@ class WorkGroup
     #[ORM\OneToMany(mappedBy: 'workGroup', targetEntity: UserWorkGroup::class, cascade: ['persist', 'remove'])]
     private Collection $userLinks;
 
+    #[ORM\OneToMany(mappedBy: 'group', targetEntity: FavoriteGroup::class, cascade: ['remove'], orphanRemoval: true)]
+    private Collection $favoriteGroups;
+
     public function __construct()
     {
         $this->moderators = new ArrayCollection();
         $this->userLinks = new ArrayCollection();
+        $this->favoriteGroups = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -124,5 +128,31 @@ class WorkGroup
     public function getUserLinks(): Collection
     {
         return $this->userLinks;
+    }
+
+    public function getFavoriteGroups(): Collection
+    {
+        return $this->favoriteGroups;
+    }
+
+    public function addFavoriteGroup(FavoriteGroup $favoriteGroup): self
+    {
+        if (!$this->favoriteGroups->contains($favoriteGroup)) {
+            $this->favoriteGroups[] = $favoriteGroup;
+            $favoriteGroup->setGroup($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoriteGroup(FavoriteGroup $favoriteGroup): self
+    {
+        if ($this->favoriteGroups->removeElement($favoriteGroup)) {
+            if ($favoriteGroup->getGroup() === $this) {
+                $favoriteGroup->setGroup(null);
+            }
+        }
+
+        return $this;
     }
 }

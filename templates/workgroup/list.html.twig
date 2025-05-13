@@ -10,14 +10,23 @@
         <a href="{{ path('workgroup_new') }}" class="btn btn-primary">➕ Nouveau groupe</a>
     </div>
 
+    {% set favoriteGroupIds = app.user ? app.user.favoriteGroups|map(f => f.group.id) : [] %}
+
     {% if workGroups is not empty %}
         <div class="row">
             {% for group in workGroups %}
                 <div class="col-md-6 mb-4">
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
-                            <h5 class="card-title">{{ group.name }}</h5>
-                            <p class="card-text">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title mb-0">
+                                    {{ group.name }}
+                                    {% if group.id in favoriteGroupIds %}
+                                        <span class="text-warning ms-1">⭐</span>
+                                    {% endif %}
+                                </h5>
+                            </div>
+                            <p class="card-text mt-2">
                                 <strong>Description :</strong> {{ group.description|default('Aucune description') }}<br>
                                 <strong>Type :</strong> 
                                 {% if group.type == 'public' %}

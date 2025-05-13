@@ -6,6 +6,8 @@
 <div class="container mt-4">
     <h1 class="mb-4">📋 Liste des Groupes</h1>
 
+    {% set favoriteGroupIds = app.user ? app.user.favoriteGroups|map(f => f.group.id) : [] %}
+
     <table class="table table-striped">
         <thead>
             <tr>
@@ -18,7 +20,12 @@
         <tbody>
             {% for workGroup in workGroups %}
                 <tr>
-                    <td>{{ workGroup.name }}</td>
+                    <td>
+                        {{ workGroup.name }}
+                        {% if workGroup.id in favoriteGroupIds %}
+                            <span class="text-warning ms-1">⭐</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if workGroup.type == 'public' %}
                             <span class="badge bg-success">Public</span>

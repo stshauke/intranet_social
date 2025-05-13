@@ -2,17 +2,20 @@
 
 namespace App\Controller;
 
-use App\Entity\Like;
 use App\Entity\Post;
+use App\Entity\Like;
 use App\Entity\Comment;
 use App\Entity\Attachment;
-use App\Form\CommentType;
 use App\Form\PostType;
-use App\Repository\LikeRepository;
+use App\Form\CommentType;
 use App\Repository\PostRepository;
+use App\Repository\LikeRepository;
 use App\Repository\CommentRepository;
+use App\Repository\UserRepository;
+use App\Repository\WorkGroupRepository;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,13 +28,41 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 class PostController extends AbstractController
 {
     #[Route('/', name: 'app_post_index', methods: ['GET'])]
-    public function index(PostRepository $postRepository): Response
-    {
+    public function index(
+        Request $request,
+        PostRepository $postRepository,
+        PaginatorInterface $paginator,
+        WorkGroupRepository $groupRepo,
+        UserRepository $userRepo
+    ): Response {
         $user = $this->getUser();
-        $posts = $postRepository->findVisiblePosts($user);
+
+        $type = $request->query->get('type');
+        $groupId = $request->query->get('group');
+        $authorId = $request->query->get('author');
+
+        $queryBuilder = $postRepository->createFilteredQueryBuilder(
+            $user,
+            $type,
+            $groupId ? (int)$groupId : null,
+            $authorId ? (int)$authorId : null
+        );
+
+        $pagination = $paginator->paginate(
+            $queryBuilder,
+            $request->query->getInt('page', 1),
+            6
+        );
 
         return $this->render('post/index.html.twig', [
-            'posts' => $posts,
+            'pagination' => $pagination,
+            'filters' => [
+                'type' => $type,
+                'group' => $groupId,
+                'author' => $authorId,
+            ],
+            'groups' => $groupRepo->findAll(),
+            'authors' => $userRepo->findAll(),
         ]);
     }
 
@@ -52,7 +83,6 @@ class PostController extends AbstractController
             $post->setCreatedAt(new \DateTimeImmutable());
             $em->persist($post);
 
-            // 📎 Gérer les fichiers joints
             $files = $form->get('attachments')->getData();
             foreach ($files as $file) {
                 $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -80,7 +110,6 @@ class PostController extends AbstractController
 
             $em->flush();
 
-            // 🔔 Notifier les membres du groupe
             if ($post->getWorkGroup()) {
                 $notificationService->notifyWorkGroupMembers($post);
             }
@@ -105,18 +134,15 @@ class PostController extends AbstractController
         $user = $this->getUser();
         $group = $post->getWorkGroup();
 
-        // 🔐 Gérer les restrictions de groupe
         if ($group) {
             if ($group->getType() === 'private' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
                 throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
             }
-
             if ($group->getType() === 'secret' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
                 throw $this->createNotFoundException('Publication introuvable.');
             }
         }
 
-        // 💬 Traitement du formulaire de commentaire
         $comment = new Comment();
         $comment->setPost($post);
         $comment->setAuthor($user);
@@ -128,7 +154,6 @@ class PostController extends AbstractController
             $em->persist($comment);
             $em->flush();
 
-            // 🔔 Notifier l’auteur du post s’il n’est pas l’auteur du commentaire
             if ($post->getAuthor() !== $user) {
                 $notificationService->createNotification(
                     'new_comment',
@@ -174,47 +199,46 @@ class PostController extends AbstractController
     }
 
     #[Route('/{id}/like-ajax', name: 'app_post_like_ajax', methods: ['POST'])]
-public function likeAjax(
-    Post $post,
-    LikeRepository $likeRepo,
-    EntityManagerInterface $em,
-    NotificationService $notificationService
-): JsonResponse {
-    $user = $this->getUser();
-    if (!$user) {
-        return new JsonResponse(['error' => 'Non autorisé'], 403);
-    }
-
-    $like = $likeRepo->findOneBy(['user' => $user, 'post' => $post]);
-
-    if ($like) {
-        $em->remove($like);
-        $liked = false;
-    } else {
-        $like = new Like();
-        $like->setUser($user);
-        $like->setPost($post);
-        $like->setCreatedAt(new \DateTimeImmutable());
-        $em->persist($like);
-        $liked = true;
-
-        // 🔔 Notification : seulement si l'utilisateur n'est pas l'auteur
-        if ($post->getAuthor() !== $user) {
-            $notificationService->createNotification(
-                'new_like',
-                sprintf('%s a aimé votre publication : "%s"', $user->getFullName(), $post->getTitle()),
-                $post->getAuthor(),
-                $post
-            );
+    public function likeAjax(
+        Post $post,
+        LikeRepository $likeRepo,
+        EntityManagerInterface $em,
+        NotificationService $notificationService
+    ): JsonResponse {
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Non autorisé'], 403);
         }
+
+        $like = $likeRepo->findOneBy(['user' => $user, 'post' => $post]);
+
+        if ($like) {
+            $em->remove($like);
+            $liked = false;
+        } else {
+            $like = new Like();
+            $like->setUser($user);
+            $like->setPost($post);
+            $like->setCreatedAt(new \DateTimeImmutable());
+            $em->persist($like);
+            $liked = true;
+
+            if ($post->getAuthor() !== $user) {
+                $notificationService->createNotification(
+                    'new_like',
+                    sprintf('%s a aimé votre publication : "%s"', $user->getFullName(), $post->getTitle()),
+                    $post->getAuthor(),
+                    $post
+                );
+            }
+        }
+
+        $em->flush();
+        $likeCount = $likeRepo->count(['post' => $post]);
+
+        return new JsonResponse([
+            'liked' => $liked,
+            'likeCount' => $likeCount,
+        ]);
     }
-
-    $em->flush();
-    $likeCount = $likeRepo->count(['post' => $post]);
-
-    return new JsonResponse([
-        'liked' => $liked,
-        'likeCount' => $likeCount,
-    ]);
-}
 }

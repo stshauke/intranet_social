@@ -9,7 +9,6 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use App\Entity\NotificationPreference;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -47,9 +46,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: NotificationPreference::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $notificationPreferences;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: FavoriteGroup::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $favoriteGroups;
+
+    #[ORM\OneToMany(mappedBy: 'recipient', targetEntity: Notification::class, orphanRemoval: true)]
+    private Collection $notifications;
+
     public function __construct()
     {
         $this->notificationPreferences = new ArrayCollection();
+        $this->favoriteGroups = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -104,7 +111,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // Nettoyer les données sensibles temporaires si besoin
+        // Nettoyage des données sensibles si besoin
     }
 
     public function getFullName(): ?string
@@ -175,13 +182,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->updatedAt = new \DateTime();
     }
 
-    // === Notifications (déjà présent)
     public function getUnreadNotifications(): array
     {
         return array_filter($this->notifications->toArray(), fn($n) => !$n->isRead());
     }
 
-    // === Préférences de notifications
     public function getNotificationPreferences(): Collection
     {
         return $this->notificationPreferences;
@@ -217,5 +222,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return null;
+    }
+
+    public function getFavoriteGroups(): Collection
+    {
+        return $this->favoriteGroups;
+    }
+
+    public function addFavoriteGroup(FavoriteGroup $favoriteGroup): self
+    {
+        if (!$this->favoriteGroups->contains($favoriteGroup)) {
+            $this->favoriteGroups[] = $favoriteGroup;
+            $favoriteGroup->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoriteGroup(FavoriteGroup $favoriteGroup): self
+    {
+        if ($this->favoriteGroups->removeElement($favoriteGroup)) {
+            if ($favoriteGroup->getUser() === $this) {
+                $favoriteGroup->setUser(null);
+            }
+        }
+
+        return $this;
     }
 }

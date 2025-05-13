@@ -11,7 +11,6 @@
     {% endblock %}
 </head>
 
-
 {% set route = app.request.attributes.get('_route') %}
 {% set isLoginOrRegister = route in ['app_login', 'app_register'] %}
 
@@ -28,7 +27,6 @@
             {% if not isLoginOrRegister %}
                 <ul class="navbar-nav ms-auto align-items-center">
 
-                    {# ✅ Notifications menu avec compteur dynamique #}
                     {% if app.user %}
                         <li class="nav-item dropdown me-3">
                             <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -45,7 +43,6 @@
                             </ul>
                         </li>
 
-                        {# ✅ Messagerie lien simple #}
                         <li class="nav-item me-3">
                             <a class="nav-link" href="{{ path('app_message') }}">✉️</a>
                         </li>
@@ -94,13 +91,18 @@
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_post_index') }}">📰 Fil d'actualité</a></li>
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_user') }}">👥 Annuaire</a></li>
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('workgroup_list') }}">👨‍👩‍👧‍👦 Groupes</a></li>
+                            <li class="nav-item mb-2">
+                                <a class="nav-link" href="{{ path('favorites_index') }}">
+                                    ⭐ Groupes favoris
+                                    {% if app.user %}
+                                        ({{ app.user.favoriteGroups|length }})
+                                    {% endif %}
+                                </a>
+                            </li>
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_dashboard_invitations') }}">📨 Invitations</a></li>
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_message') }}">✉️ Messagerie</a></li>
                             <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_notification') }}">🔔 Notifications</a></li>
-                            <li class="nav-item mb-2">
-    <a class="nav-link" href="{{ path('app_notification_preferences') }}">⚙️ Préférences notifications</a>
-</li>
-
+                            <li class="nav-item mb-2"><a class="nav-link" href="{{ path('app_notification_preferences') }}">⚙️ Préférences notifications</a></li>
                             {% if is_granted('ROLE_ADMIN') %}
                                 <li class="nav-item mb-2"><a class="nav-link" href="{{ path('admin_dashboard') }}">🔧 Admin</a></li>
                             {% endif %}

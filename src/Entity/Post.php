@@ -42,6 +42,10 @@ class Post
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: Comment::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $comments;
 
+    #[ORM\Column(length: 50)]
+    #[Assert\NotBlank]
+    private ?string $type = 'publication'; // <-- nouveau champ
+
     public function __construct()
     {
         $this->likes = new ArrayCollection();
@@ -114,6 +118,17 @@ class Post
         return $this;
     }
 
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): self
+    {
+        $this->type = $type;
+        return $this;
+    }
+
     /**
      * @return Collection<int, Like>
      */
@@ -143,9 +158,6 @@ class Post
         return $this;
     }
 
-    /**
-     * Vérifie si l'utilisateur a liké ce post.
-     */
     public function isLikedByUser(?User $user): bool
     {
         if (!$user) {

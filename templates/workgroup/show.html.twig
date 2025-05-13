@@ -51,7 +51,7 @@
                         {% endif %}
                     </div>
 
-                    <div class="mt-4 d-flex flex-wrap gap-2">
+                    <div class="mt-4 d-flex flex-wrap gap-2 align-items-center">
                         {% if app.user == workGroup.creator or workGroup.moderators.contains(app.user) %}
                             <a href="{{ path('workgroup_edit', { id: workGroup.id }) }}" class="btn btn-sm btn-outline-primary">✏️ Modifier</a>
                             <form method="post" action="{{ path('workgroup_delete', { id: workGroup.id }) }}"
@@ -63,6 +63,27 @@
                                 📧 Inviter
                             </a>
                         {% endif %}
+
+                        {# Bouton Favori #}
+                        {% if app.user %}
+                            {% set isFavorite = false %}
+                            {% for fav in app.user.favoriteGroups %}
+                                {% if fav.group.id == workGroup.id %}
+                                    {% set isFavorite = true %}
+                                {% endif %}
+                            {% endfor %}
+
+                            <form method="post" action="{{ path('toggle_favorite_group', { id: workGroup.id }) }}">
+                                <button type="submit" class="btn btn-sm {{ isFavorite ? 'btn-warning' : 'btn-outline-warning' }}">
+                                    {% if isFavorite %}
+                                        Retirer des favoris ⭐
+                                    {% else %}
+                                        Ajouter aux favoris ⭐
+                                    {% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+
                         <a href="{{ path('workgroup_list') }}" class="btn btn-sm btn-secondary ms-auto">↩️ Retour</a>
                     </div>
                 </div>

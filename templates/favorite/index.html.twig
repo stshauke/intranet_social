@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes groupes favoris{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1 class="mb-4">⭐ Mes groupes favoris</h1>
+
+    {% if groups|length > 0 %}
+        <div class="list-group">
+            {% for group in groups %}
+                <a href="{{ path('workgroup_show', { id: group.id }) }}" class="list-group-item list-group-item-action">
+                    <strong>{{ group.name }}</strong>
+                    <span class="badge bg-secondary ms-2">{{ group.type|capitalize }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">Vous n'avez encore aucun groupe en favori.</div>
+    {% endif %}
+
+    <a href="{{ path('workgroup_list') }}" class="btn btn-outline-secondary mt-4">↩️ Retour à la liste des groupes</a>
+</div>
+{% endblock %}

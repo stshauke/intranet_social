@@ -6,6 +6,7 @@ use App\Entity\Post;
 use App\Entity\WorkGroup;
 use App\Repository\WorkGroupRepository;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -14,7 +15,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
-use Symfony\Bundle\SecurityBundle\Security; // ✅ CORRECT ici (au lieu de Component\Security\Core\Security)
+use Symfony\Bundle\SecurityBundle\Security;
 
 class PostType extends AbstractType
 {
@@ -32,6 +33,15 @@ class PostType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre de la publication'
+            ])
+            ->add('type', ChoiceType::class, [
+                'label' => 'Type de contenu',
+                'choices' => [
+                    'Publication' => 'publication',
+                    'Annonce' => 'annonce',
+                ],
+                'placeholder' => 'Choisir un type',
+                'required' => true,
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Contenu'
