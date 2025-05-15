@@ -21,7 +21,7 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="get" action="{{ path('app_post_index') }}" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="type" class="form-label">Type de contenu</label>
                     <select name="type" id="type" class="form-select">
                         <option value="">Tous</option>
@@ -30,7 +30,7 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="group" class="form-label">Groupe</label>
                     <select name="group" id="group" class="form-select">
                         <option value="">Tous les groupes</option>
@@ -42,7 +42,7 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="author" class="form-label">Auteur</label>
                     <select name="author" id="author" class="form-select">
                         <option value="">Tous les auteurs</option>
@@ -52,6 +52,11 @@
                             </option>
                         {% endfor %}
                     </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="tag" class="form-label">Hashtag</label>
+                    <input type="text" name="tag" id="tag" value="{{ filters.tag ?? '' }}" class="form-control" placeholder="#hashtag">
                 </div>
 
                 <div class="col-12 d-flex justify-content-end">
@@ -95,6 +100,14 @@
                             </div>
 
                             <p>{{ post.content|nl2br }}</p>
+
+                            {% if post.tags %}
+                                <div class="mt-2">
+                                    {% for tag in post.tags %}
+                                        <a href="{{ path('app_post_index', {'tag': tag}) }}" class="badge bg-secondary text-decoration-none">#{{ tag }}</a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
 
                             <div class="d-flex justify-content-between align-items-center mt-3">
                                 <form method="post" action="{{ path('app_post_like_ajax', {'id': post.id}) }}">

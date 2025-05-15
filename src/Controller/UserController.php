@@ -20,6 +20,7 @@ use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse; // ✅ Ajouté
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
@@ -155,5 +156,25 @@ class UserController extends AbstractController
             'form' => $form->createView(),
             'recipient' => $user,
         ]);
+    }
+
+    // ✅ Route de recherche pour l'autocomplétion des mentions
+    #[Route('/mention/search', name: 'mention_search', methods: ['GET'])]
+    public function mentionSearch(Request $request, UserRepository $userRepo): JsonResponse
+    {
+        $term = $request->query->get('q', '');
+        $users = $userRepo->createQueryBuilder('u')
+            ->where('u.username LIKE :term')
+            ->setParameter('term', $term . '%')
+            ->setMaxResults(10)
+            ->getQuery()
+            ->getResult();
+
+        $results = array_map(fn(User $u) => [
+            'id' => $u->getId(),
+            'value' => '@' . $u->getUsername(),
+        ], $users);
+
+        return new JsonResponse($results);
     }
 }

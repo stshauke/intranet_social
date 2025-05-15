@@ -8,9 +8,17 @@
         <div class="card-body">
             <h2 class="card-title">{{ post.title }}</h2>
             <p class="card-text">{{ post.content|nl2br }}</p>
+
+            {% if post.tags %}
+                <p class="mt-3">
+                    {% for tag in post.tags %}
+                        <a href="{{ path('app_post_index', {'tag': tag}) }}" class="badge bg-secondary text-decoration-none">#{{ tag }}</a>
+                    {% endfor %}
+                </p>
+            {% endif %}
+
             <p class="text-muted">Publié par {{ post.author.fullName }} le {{ post.createdAt|date('d/m/Y H:i') }}</p>
 
-            {# ✅ Affichage des pièces jointes #}
             {% if post.attachments is defined and post.attachments|length > 0 %}
                 <div class="mt-4">
                     <h5>📎 Pièces jointes</h5>
@@ -34,7 +42,6 @@
                 </div>
             {% endif %}
 
-            {# Vérification d'accès #}
             {% set group = post.workGroup %}
             {% set isMember = false %}
             {% if group %}
@@ -64,11 +71,13 @@
                     <p>Aucun commentaire pour le moment.</p>
                 {% endfor %}
 
-                <h5 class="mt-4">Ajouter un commentaire</h5>
-                {{ form_start(commentForm) }}
-                    {{ form_row(commentForm.content) }}
-                    <button class="btn btn-primary">Publier</button>
-                {{ form_end(commentForm) }}
+                {% if commentForm is defined and commentForm is not null %}
+                    <h5 class="mt-4">Ajouter un commentaire</h5>
+                    {{ form_start(commentForm) }}
+                        {{ form_row(commentForm.content) }}
+                        <button class="btn btn-primary">Publier</button>
+                    {{ form_end(commentForm) }}
+                {% endif %}
             {% else %}
                 <div class="alert alert-warning mt-4">
                     Vous n'avez pas accès à cette publication.

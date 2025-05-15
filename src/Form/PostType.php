@@ -10,6 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -45,6 +46,10 @@ class PostType extends AbstractType
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Contenu'
+            ])
+            ->add('isDraft', CheckboxType::class, [
+                'label' => 'Enregistrer comme brouillon',
+                'required' => false,
             ])
             ->add('workGroup', EntityType::class, [
                 'class' => WorkGroup::class,

@@ -44,7 +44,14 @@ class Post
 
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
-    private ?string $type = 'publication'; // <-- nouveau champ
+    private ?string $type = 'publication';
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isDraft = false;
+
+    // ✅ tags nullable côté PHP mais pas en BDD
+    #[ORM\Column(type: 'json')]
+    private ?array $tags = [];
 
     public function __construct()
     {
@@ -199,6 +206,29 @@ class Post
             }
         }
 
+        return $this;
+    }
+
+    public function getIsDraft(): bool
+    {
+        return $this->isDraft;
+    }
+
+    public function setIsDraft(bool $isDraft): self
+    {
+        $this->isDraft = $isDraft;
+        return $this;
+    }
+
+    // ✅ Setter/Getter robustes pour $tags
+    public function getTags(): array
+    {
+        return $this->tags ?? [];
+    }
+
+    public function setTags(?array $tags): self
+    {
+        $this->tags = $tags ?? [];
         return $this;
     }
 }

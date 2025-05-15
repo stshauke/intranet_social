@@ -40,19 +40,37 @@ class PostController extends AbstractController
         $type = $request->query->get('type');
         $groupId = $request->query->get('group');
         $authorId = $request->query->get('author');
+        $tag = $request->query->get('tag');
 
-        $queryBuilder = $postRepository->createFilteredQueryBuilder(
-            $user,
-            $type,
-            $groupId ? (int)$groupId : null,
-            $authorId ? (int)$authorId : null
-        );
+        if ($tag) {
+            $rawPosts = $postRepository->findByTag($tag);
+            $posts = [];
+            foreach ($rawPosts as $row) {
+                $post = $postRepository->find($row['id']);
+                if ($post) {
+                    $posts[] = $post;
+                }
+            }
 
-        $pagination = $paginator->paginate(
-            $queryBuilder,
-            $request->query->getInt('page', 1),
-            6
-        );
+            $pagination = $paginator->paginate(
+                $posts,
+                $request->query->getInt('page', 1),
+                6
+            );
+        } else {
+            $queryBuilder = $postRepository->createFilteredQueryBuilder(
+                $user,
+                $type,
+                $groupId ? (int)$groupId : null,
+                $authorId ? (int)$authorId : null
+            );
+
+            $pagination = $paginator->paginate(
+                $queryBuilder,
+                $request->query->getInt('page', 1),
+                6
+            );
+        }
 
         return $this->render('post/index.html.twig', [
             'pagination' => $pagination,
@@ -60,6 +78,7 @@ class PostController extends AbstractController
                 'type' => $type,
                 'group' => $groupId,
                 'author' => $authorId,
+                'tag' => $tag,
             ],
             'groups' => $groupRepo->findAll(),
             'authors' => $userRepo->findAll(),
@@ -71,7 +90,8 @@ class PostController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         SluggerInterface $slugger,
-        NotificationService $notificationService
+        NotificationService $notificationService,
+        UserRepository $userRepo
     ): Response {
         $post = new Post();
         $post->setAuthor($this->getUser());
@@ -81,6 +101,21 @@ class PostController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $post->setCreatedAt(new \DateTimeImmutable());
+            $post->setTags($this->extractTags($post->getContent()));
+
+            $mentions = $this->extractMentions($post->getContent());
+            foreach ($mentions as $username) {
+                $mentionedUser = $userRepo->findOneBy(['username' => $username]);
+                if ($mentionedUser) {
+                    $notificationService->createNotification(
+                        'mention',
+                        sprintf('%s vous a mentionné dans une publication : "%s"', $this->getUser()->getFullName(), $post->getTitle()),
+                        $mentionedUser,
+                        $post
+                    );
+                }
+            }
+
             $em->persist($post);
 
             $files = $form->get('attachments')->getData();
@@ -114,7 +149,7 @@ class PostController extends AbstractController
                 $notificationService->notifyWorkGroupMembers($post);
             }
 
-            $this->addFlash('success', 'Publication créée avec succès.');
+            $this->addFlash('success', $post->getIsDraft() ? 'Brouillon enregistré.' : 'Publication créée avec succès.');
             return $this->redirectToRoute('app_post_index');
         }
 
@@ -123,58 +158,75 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_post_show', methods: ['GET', 'POST'])]
-    public function show(
-        Post $post,
-        Request $request,
-        EntityManagerInterface $em,
-        CommentRepository $commentRepo,
-        NotificationService $notificationService
-    ): Response {
+    #[Route('/drafts', name: 'post_drafts', methods: ['GET'])]
+    public function listDrafts(PostRepository $postRepository): Response
+    {
         $user = $this->getUser();
-        $group = $post->getWorkGroup();
+        $drafts = $postRepository->findDraftsByUser($user);
 
-        if ($group) {
-            if ($group->getType() === 'private' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
-                throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
-            }
-            if ($group->getType() === 'secret' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
-                throw $this->createNotFoundException('Publication introuvable.');
-            }
+        return $this->render('post/drafts.html.twig', [
+            'drafts' => $drafts,
+        ]);
+    }
+
+    #[Route('/draft/{id}', name: 'post_draft_show', methods: ['GET'])]
+    public function draftShow(int $id, PostRepository $postRepository): Response
+    {
+        $post = $postRepository->find($id);
+
+        if (!$post) {
+            throw $this->createNotFoundException('Brouillon non trouvé.');
         }
 
-        $comment = new Comment();
-        $comment->setPost($post);
-        $comment->setAuthor($user);
-
-        $commentForm = $this->createForm(CommentType::class, $comment);
-        $commentForm->handleRequest($request);
-
-        if ($commentForm->isSubmitted() && $commentForm->isValid()) {
-            $em->persist($comment);
-            $em->flush();
-
-            if ($post->getAuthor() !== $user) {
-                $notificationService->createNotification(
-                    'new_comment',
-                    sprintf('%s a commenté votre publication : "%s"', $user->getFullName(), $post->getTitle()),
-                    $post->getAuthor(),
-                    $post,
-                    $comment
-                );
-            }
-
-            $this->addFlash('success', 'Commentaire publié.');
-            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+        if (!$post->getIsDraft() || $post->getAuthor() !== $this->getUser()) {
+            throw $this->createAccessDeniedException('Accès refusé.');
         }
-
-        $comments = $commentRepo->findBy(['post' => $post], ['createdAt' => 'ASC']);
 
         return $this->render('post/show.html.twig', [
             'post' => $post,
-            'comments' => $comments,
-            'commentForm' => $commentForm->createView(),
+            'comments' => [],
+            'commentForm' => null,
         ]);
+    }
+
+    #[Route('/{id}/publish', name: 'post_publish_draft', methods: ['POST'])]
+    public function publishDraft(Request $request, Post $post, EntityManagerInterface $em): Response
+    {
+        if ($this->isCsrfTokenValid('publish' . $post->getId(), $request->request->get('_token'))) {
+            if ($post->getIsDraft() && $post->getAuthor() === $this->getUser()) {
+                $post->setIsDraft(false);
+                $em->flush();
+
+                $this->addFlash('success', 'Brouillon publié avec succès.');
+            } else {
+                $this->addFlash('danger', 'Action non autorisée.');
+            }
+        }
+
+        return $this->redirectToRoute('post_drafts');
+    }
+
+    #[Route('/mention/search', name: 'mention_search', methods: ['GET'])]
+    public function mentionSearch(Request $request, UserRepository $userRepo): JsonResponse
+    {
+        $query = $request->query->get('q', '');
+
+        $users = $userRepo->createQueryBuilder('u')
+            ->where('u.username LIKE :query')
+            ->setParameter('query', '%' . $query . '%')
+            ->setMaxResults(10)
+            ->getQuery()
+            ->getResult();
+
+        $results = array_map(function ($user) {
+            return [
+                'id' => $user->getId(),
+                'username' => $user->getUsername(),
+                'fullName' => $user->getFullName(),
+            ];
+        }, $users);
+
+        return new JsonResponse($results);
     }
 
     #[Route('/{id}/delete', name: 'post_delete', methods: ['POST'])]
@@ -240,5 +292,69 @@ class PostController extends AbstractController
             'liked' => $liked,
             'likeCount' => $likeCount,
         ]);
+    }
+
+    #[Route('/{id}', name: 'app_post_show', methods: ['GET', 'POST'])]
+    public function show(
+        Post $post,
+        Request $request,
+        EntityManagerInterface $em,
+        CommentRepository $commentRepo,
+        NotificationService $notificationService
+    ): Response {
+        $user = $this->getUser();
+        $group = $post->getWorkGroup();
+
+        if ($group) {
+            if ($group->getType() === 'private' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
+                throw $this->createAccessDeniedException('Accès réservé aux membres du groupe.');
+            }
+            if ($group->getType() === 'secret' && !$group->getUserLinks()->exists(fn ($i, $link) => $link->getUser() === $user)) {
+                throw $this->createNotFoundException('Publication introuvable.');
+            }
+        }
+
+        $comment = new Comment();
+        $comment->setPost($post);
+        $comment->setAuthor($user);
+
+        $commentForm = $this->createForm(CommentType::class, $comment);
+        $commentForm->handleRequest($request);
+
+        if ($commentForm->isSubmitted() && $commentForm->isValid()) {
+            $em->persist($comment);
+            $em->flush();
+
+            if ($post->getAuthor() !== $user) {
+                $notificationService->createNotification(
+                    'new_comment',
+                    sprintf('%s a commenté votre publication : "%s"', $user->getFullName(), $post->getTitle()),
+                    $post->getAuthor(),
+                    $post,
+                    $comment
+                );
+            }
+
+            $this->addFlash('success', 'Commentaire publié.');
+            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+        }
+
+        $comments = $commentRepo->findBy(['post' => $post], ['createdAt' => 'ASC']);
+
+        return $this->render('post/show.html.twig', [
+            'post' => $post,
+            'comments' => $comments,
+            'commentForm' => $commentForm->createView(),
+        ]);
+    }
+
+    private function extractTags(string $content): array {
+        preg_match_all('/#(\w+)/u', $content, $matches);
+        return array_unique($matches[1]);
+    }
+
+    private function extractMentions(string $content): array {
+        preg_match_all('/@(\w+)/u', $content, $matches);
+        return array_unique($matches[1]);
     }
 }

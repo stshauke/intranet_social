@@ -60,6 +60,9 @@ class NotificationService
         return $notification;
     }
 
+    /**
+     * Notification aux membres du groupe sauf l'auteur du post.
+     */
     public function notifyWorkGroupMembers(Post $post): void
     {
         $workGroup = $post->getWorkGroup();
@@ -72,7 +75,11 @@ class NotificationService
                 continue;
             }
 
-            $message = sprintf('Nouvelle publication dans le groupe "%s" : %s', $workGroup->getName(), $post->getTitle());
+            $message = sprintf(
+                'Nouvelle publication dans le groupe "%s" : %s',
+                $workGroup->getName(),
+                $post->getTitle()
+            );
 
             $this->createNotification(
                 'new_post',

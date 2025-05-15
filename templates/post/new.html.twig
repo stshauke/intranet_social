@@ -1,4 +1,3 @@
-{# templates/post/new.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}Nouvelle publication{% endblock %}
@@ -17,17 +16,44 @@
 
         <div class="mb-3">
             {{ form_label(form.content) }}
-            {{ form_widget(form.content, {'attr': {'class': 'form-control', 'rows': '5', 'placeholder': 'Écrivez ici votre contenu'}}) }}
+            {{ form_widget(form.content, {'attr': {'class': 'form-control', 'rows': '5', 'placeholder': 'Écrivez ici votre contenu', 'id': 'post_content'}}) }}
             {{ form_errors(form.content) }}
         </div>
 
         <button type="submit" class="btn btn-success">Publier</button>
         <a href="{{ path('app_post_index') }}" class="btn btn-secondary">Annuler</a>
 
-        {# ✅ Ne pas afficher le champ attachments dans le reste #}
         {% do form.attachments.setRendered %}
-        
+
     {{ form_end(form) }}
 </div>
 {% endblock %}
 
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/tributejs@5.1.3/dist/tribute.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tribute = new Tribute({
+                trigger: "@",
+                values: async (text, cb) => {
+                    try {
+                        const response = await fetch('/user/mention/search?q=' + encodeURIComponent(text));
+                        const data = await response.json();
+                        cb(data);
+                    } catch (e) {
+                        console.error('Erreur lors du chargement des suggestions', e);
+                        cb([]);
+                    }
+                },
+                lookup: 'value',
+                fillAttr: 'value'
+            });
+
+            const textarea = document.getElementById('post_content');
+            if (textarea) {
+                tribute.attach(textarea);
+            }
+        });
+    </script>
+{% endblock %}

@@ -40,8 +40,11 @@ class Notification
     private ?User $user = null;
 
     // Post éventuellement lié à la notification (optionnel)
-    #[ORM\ManyToOne]
+    //#[ORM\ManyToOne]
+    //private ?Post $relatedPost = null;
+    #[ORM\ManyToOne(targetEntity: Post::class, cascade: ['persist'])]
     private ?Post $relatedPost = null;
+
 
     // Commentaire éventuellement lié à la notification (optionnel)
     #[ORM\ManyToOne]
