@@ -348,13 +348,43 @@ class PostController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/edit', name: 'post_edit')]
+    public function edit(
+        Request $request,
+        Post $post,
+        EntityManagerInterface $em,
+        SluggerInterface $slugger
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        if ($this->getUser() !== $post->getAuthor()) {
+            throw $this->createAccessDeniedException("Vous n'êtes pas l'auteur de cette publication.");
+        }
+
+        $form = $this->createForm(PostType::class, $post);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $post->setTags($this->extractTags($post->getContent()));
+            $em->flush();
+
+            $this->addFlash('success', 'Publication modifiée avec succès.');
+            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+        }
+
+        return $this->render('post/edit.html.twig', [
+            'form' => $form->createView(),
+            'post' => $post,
+        ]);
+    }
+
     private function extractTags(string $content): array {
-        preg_match_all('/#(\w+)/u', $content, $matches);
+        preg_match_all('/#(\\w+)/u', $content, $matches);
         return array_unique($matches[1]);
     }
 
     private function extractMentions(string $content): array {
-        preg_match_all('/@(\w+)/u', $content, $matches);
+        preg_match_all('/@(\\w+)/u', $content, $matches);
         return array_unique($matches[1]);
     }
 }

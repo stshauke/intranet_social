@@ -114,11 +114,12 @@
 
             <main class="flex-grow-1 {% if isLoginOrRegister %}col-12 d-flex justify-content-center align-items-center{% else %}col-md-9 ms-sm-auto col-lg-10{% endif %} px-md-4 py-4"
                   style="{% if isLoginOrRegister %}min-height: calc(100vh - 70px);{% endif %}">
+                {# ✅ FLASH MESSAGES avec |raw pour les liens HTML (comme les liens de réinitialisation) #}
                 {% for label, messages in app.flashes %}
                     {% for message in messages %}
                         <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            {{ message|raw }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                         </div>
                     {% endfor %}
                 {% endfor %}

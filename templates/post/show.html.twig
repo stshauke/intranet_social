@@ -6,8 +6,23 @@
 <div class="container mt-4">
     <div class="card shadow-sm">
         <div class="card-body">
-            <h2 class="card-title">{{ post.title }}</h2>
-            <p class="card-text">{{ post.content|nl2br }}</p>
+            <div class="d-flex justify-content-between">
+                <h2 class="card-title">{{ post.title }}</h2>
+
+                {% if post.author == app.user %}
+                    <div>
+                        <a href="{{ path('post_edit', {'id': post.id}) }}" class="btn btn-warning btn-sm me-2">
+                            ✏️ Modifier
+                        </a>
+                        <form method="post" action="{{ path('post_delete', {'id': post.id}) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette publication ?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                            <button class="btn btn-danger btn-sm">🗑️ Supprimer</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <p class="card-text mt-2">{{ post.content|nl2br }}</p>
 
             {% if post.tags %}
                 <p class="mt-3">

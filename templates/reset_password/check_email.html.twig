@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lien de réinitialisation envoyé{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="alert alert-success">
+            Si un compte correspond à votre adresse, un lien de réinitialisation a été envoyé.
+        </div>
+
+        {% if resetToken is defined %}
+            <div class="alert alert-info">
+                <strong>🔗 Lien de réinitialisation (dev only) :</strong><br>
+                <a href="{{ url('app_reset_password', {'token': resetToken.token}) }}">
+                    {{ url('app_reset_password', {'token': resetToken.token}) }}
+                </a>
+                <p class="mt-2 text-muted">
+                    Ce lien expire dans
+                    {{ resetToken.expirationMessageKey|trans(resetToken.expirationMessageData, 'ResetPasswordBundle') }}.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
